@@ -3467,8 +3467,6 @@ describe("Loadmonitoring", () => {
     });
   });
 
-  //TO DO!!!!
-
   describe("_changeStep", () => {
     let fileStorage;
     let fileStorageInitPayload;
@@ -4057,8 +4055,6 @@ describe("Loadmonitoring", () => {
     });
   });
 
-  //CHECK _refresh !!
-
   describe("_changePeriod", () => {
     let fileStorage;
     let fileStorageInitPayload;
@@ -4322,6 +4318,560 @@ describe("Loadmonitoring", () => {
       expect(onTransgressionMockFunc).not.toHaveBeenCalled();
     });
 
-    // TO DO - Add other tests
+    it("should calculate new loadmonitoring data based on last period average power - if period can be closed properly and new loadmonitoring data starts from step inside period", async () => {
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0,
+          1570872660000: 100,
+          1570872720000: 150,
+          1570872780000: 250,
+          1570872840000: 300,
+          1570872900000: 500
+        }
+      };
+
+      await exec();
+
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: false,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 2515,
+        currentPeriodEndPredictedPower: 10060,
+        currentPeriodCounterValues: {
+          1570872600000: 0,
+          1570872660000: 101,
+          1570872720000: 152,
+          1570872780000: 253,
+          1570872840000: 304,
+          1570872900000: 505
+        },
+        currentPeriodPowerValues: {
+          1570872660000: 6060,
+          1570872720000: 3060,
+          1570872780000: 6060,
+          1570872840000: 3060,
+          1570872900000: 12060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570872900000: 505,
+          1570872960000: 706,
+          1570873020000: 907,
+          1570873080000: 1108,
+          1570873140000: 1309,
+          1570873200000: 1510,
+          1570873260000: 1711,
+          1570873320000: 1912,
+          1570873380000: 2113,
+          1570873440000: 2314,
+          1570873500000: 2515
+        },
+        lastPeriodAveragePower: 4140,
+        currentStepBeginDate: new Date("2019-10-12T09:35:00.000Z"),
+        currentStepBeginEnergy: 505,
+        currentStepEndDate: new Date("2019-10-12T09:36:00.000Z"),
+        lastStepAveragePower: 12060,
+        currentLoadmonitoringData: {
+          initialCounterValue: 123000 + 1020,
+          counters: {
+            1570872600000: 0,
+            1570872660000: 100,
+            1570872720000: 150,
+            1570872780000: 250,
+            1570872840000: 300,
+            1570872900000: 500
+          }
+        },
+        warningLimitPower: 800,
+        warningLimitEnergy: 200,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 250,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+    });
+
+    it("should call onValidPeriodClose if period was closed properly and new loadmonitoring data starts from step inside period", async () => {
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0,
+          1570872660000: 100,
+          1570872720000: 150,
+          1570872780000: 250,
+          1570872840000: 300,
+          1570872900000: 500
+        }
+      };
+
+      await exec();
+
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0]).toEqual(
+        initialPeriodBeginDate
+      );
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1]).toEqual(
+        initialPeriodEndDate
+      );
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(4140);
+    });
+
+    it("should call onTransgression if period was closed properly and new loadmonitoring data starts from step inside period and last period average active power is above given alert limit", async () => {
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0,
+          1570872660000: 100,
+          1570872720000: 150,
+          1570872780000: 250,
+          1570872840000: 300,
+          1570872900000: 500
+        }
+      };
+      await exec();
+
+      expect(onTransgressionMockFunc).toHaveBeenCalledTimes(1);
+      expect(onTransgressionMockFunc.mock.calls[0][0]).toEqual(
+        initialPeriodBeginDate
+      );
+      expect(onTransgressionMockFunc.mock.calls[0][1]).toEqual(
+        initialPeriodEndDate
+      );
+      expect(onTransgressionMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
+      expect(onTransgressionMockFunc.mock.calls[0][3]).toEqual(4140);
+    });
+
+    it("should not call onTransgression if period was closed properly and new loadmonitoring data starts from step inside period but last period average active power is below given alert limit", async () => {
+      loadmonitoringFileContent.alertLimitPower = 5000;
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0,
+          1570872660000: 100,
+          1570872720000: 150,
+          1570872780000: 250,
+          1570872840000: 300,
+          1570872900000: 500
+        }
+      };
+      await exec();
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should calculate new loadmonitoring data based on last period average power - if period can be closed properly and new loadmonitoring data starts from last step", async () => {
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0,
+          1570872660000: 50,
+          1570872720000: 150,
+          1570872780000: 250,
+          1570872840000: 300,
+          1570872900000: 400,
+          1570872960000: 500,
+          1570873020000: 600,
+          1570873080000: 650,
+          1570873140000: 750,
+          1570873200000: 750,
+          1570873260000: 850,
+          1570873320000: 900,
+          1570873380000: 900,
+          1570873440000: 1000
+        }
+      };
+
+      await exec();
+
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: false,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 1115,
+        currentPeriodEndPredictedPower: 4460,
+        currentPeriodCounterValues: {
+          1570872600000: 0,
+          1570872660000: 51,
+          1570872720000: 152,
+          1570872780000: 253,
+          1570872840000: 304,
+          1570872900000: 405,
+          1570872960000: 506,
+          1570873020000: 607,
+          1570873080000: 658,
+          1570873140000: 759,
+          1570873200000: 760,
+          1570873260000: 861,
+          1570873320000: 912,
+          1570873380000: 913,
+          1570873440000: 1014
+        },
+        currentPeriodPowerValues: {
+          1570872660000: 60 * 51,
+          1570872720000: 60 * 101,
+          1570872780000: 60 * 101,
+          1570872840000: 60 * 51,
+          1570872900000: 60 * 101,
+          1570872960000: 60 * 101,
+          1570873020000: 60 * 101,
+          1570873080000: 60 * 51,
+          1570873140000: 60 * 101,
+          1570873200000: 60 * 1,
+          1570873260000: 60 * 101,
+          1570873320000: 60 * 51,
+          1570873380000: 60 * 1,
+          1570873440000: 60 * 101
+        },
+        currentPeriodPredictedCounterValues: {
+          1570873440000: 1014,
+          1570873500000: 1115
+        },
+        lastPeriodAveragePower: 4140,
+        currentStepBeginDate: new Date("2019-10-12T09:44:00.000Z"),
+        currentStepBeginEnergy: 1014,
+        currentStepEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        lastStepAveragePower: 6060,
+        currentLoadmonitoringData: {
+          initialCounterValue: 123000 + 1020,
+          counters: {
+            1570872600000: 0,
+            1570872660000: 50,
+            1570872720000: 150,
+            1570872780000: 250,
+            1570872840000: 300,
+            1570872900000: 400,
+            1570872960000: 500,
+            1570873020000: 600,
+            1570873080000: 650,
+            1570873140000: 750,
+            1570873200000: 750,
+            1570873260000: 850,
+            1570873320000: 900,
+            1570873380000: 900,
+            1570873440000: 1000
+          }
+        },
+        warningLimitPower: 800,
+        warningLimitEnergy: 200,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 250,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+    });
+
+    it("should call onValidPeriodClose if period was closed properly and new loadmonitoring data starts from last step", async () => {
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0,
+          1570872660000: 50,
+          1570872720000: 150,
+          1570872780000: 250,
+          1570872840000: 300,
+          1570872900000: 400,
+          1570872960000: 500,
+          1570873020000: 600,
+          1570873080000: 650,
+          1570873140000: 750,
+          1570873200000: 750,
+          1570873260000: 850,
+          1570873320000: 900,
+          1570873380000: 900,
+          1570873440000: 1000
+        }
+      };
+
+      await exec();
+
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0]).toEqual(
+        initialPeriodBeginDate
+      );
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1]).toEqual(
+        initialPeriodEndDate
+      );
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(4140);
+    });
+
+    it("should call onTransgression if period was closed properly and new loadmonitoring data starts from last step and last period average active power is above given alert limit", async () => {
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0,
+          1570872660000: 50,
+          1570872720000: 150,
+          1570872780000: 250,
+          1570872840000: 300,
+          1570872900000: 400,
+          1570872960000: 500,
+          1570873020000: 600,
+          1570873080000: 650,
+          1570873140000: 750,
+          1570873200000: 750,
+          1570873260000: 850,
+          1570873320000: 900,
+          1570873380000: 900,
+          1570873440000: 1000
+        }
+      };
+      await exec();
+
+      expect(onTransgressionMockFunc).toHaveBeenCalledTimes(1);
+      expect(onTransgressionMockFunc.mock.calls[0][0]).toEqual(
+        initialPeriodBeginDate
+      );
+      expect(onTransgressionMockFunc.mock.calls[0][1]).toEqual(
+        initialPeriodEndDate
+      );
+      expect(onTransgressionMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
+      expect(onTransgressionMockFunc.mock.calls[0][3]).toEqual(4140);
+    });
+
+    it("should not call onTransgression if period was closed properly and new loadmonitoring data starts from last step but last period average active power is below given alert limit", async () => {
+      loadmonitoringFileContent.alertLimitPower = 5000;
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0,
+          1570872660000: 50,
+          1570872720000: 150,
+          1570872780000: 250,
+          1570872840000: 300,
+          1570872900000: 400,
+          1570872960000: 500,
+          1570873020000: 600,
+          1570873080000: 650,
+          1570873140000: 750,
+          1570873200000: 750,
+          1570873260000: 850,
+          1570873320000: 900,
+          1570873380000: 900,
+          1570873440000: 1000
+        }
+      };
+      await exec();
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not close current period properly, but perform calculation using average power as 0 - if period cannot be closed correctly due to invalid new period date and it is first step of period", async () => {
+      //one step ahead
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570873500000: 0
+        }
+      };
+
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: false,
+        currentPeriodBeginDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T10:00:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 0,
+        currentPeriodEndPredictedPower: 0,
+        currentPeriodCounterValues: {
+          1570873500000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570873500000: 0,
+          1570873560000: 0,
+          1570873620000: 0,
+          1570873680000: 0,
+          1570873740000: 0,
+          1570873800000: 0,
+          1570873860000: 0,
+          1570873920000: 0,
+          1570873980000: 0,
+          1570874040000: 0,
+          1570874100000: 0,
+          1570874160000: 0,
+          1570874220000: 0,
+          1570874280000: 0,
+          1570874340000: 0,
+          1570874400000: 0
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:46:00.000Z"),
+        lastStepAveragePower: 0,
+        currentLoadmonitoringData: {
+          initialCounterValue: 123000 + 1020,
+          counters: {
+            1570873500000: 0
+          }
+        },
+        warningLimitPower: 800,
+        warningLimitEnergy: 200,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 250,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      await exec();
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+    });
+
+    it("should not call onValidPeriodClose - if period cannot be closed correctly due to invalid new period date and it is first step of period", async () => {
+      //one step ahead
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570873500000: 0
+        }
+      };
+
+      await exec();
+
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should calculate new loadmonitoring data based on last period average power - if period can not be closed properly and new loadmonitoring data starts from step inside period", async () => {
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570873500000: 0,
+          1570873560000: 100,
+          1570873620000: 150,
+          1570873680000: 250,
+          1570873740000: 300,
+          1570873800000: 500
+        }
+      };
+
+      await exec();
+
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: false,
+        currentPeriodBeginDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T10:00:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 2515,
+        currentPeriodEndPredictedPower: 10060,
+        currentPeriodCounterValues: {
+          1570873500000: 0,
+          1570873560000: 101,
+          1570873620000: 152,
+          1570873680000: 253,
+          1570873740000: 304,
+          1570873800000: 505
+        },
+        currentPeriodPowerValues: {
+          1570873560000: 6060,
+          1570873620000: 3060,
+          1570873680000: 6060,
+          1570873740000: 3060,
+          1570873800000: 12060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570873800000: 505,
+          1570873860000: 706,
+          1570873920000: 907,
+          1570873980000: 1108,
+          1570874040000: 1309,
+          1570874100000: 1510,
+          1570874160000: 1711,
+          1570874220000: 1912,
+          1570874280000: 2113,
+          1570874340000: 2314,
+          1570874400000: 2515
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:50:00.000Z"),
+        currentStepBeginEnergy: 505,
+        currentStepEndDate: new Date("2019-10-12T09:51:00.000Z"),
+        lastStepAveragePower: 12060,
+        currentLoadmonitoringData: {
+          initialCounterValue: 123000 + 1020,
+          counters: {
+            1570873500000: 0,
+            1570873560000: 100,
+            1570873620000: 150,
+            1570873680000: 250,
+            1570873740000: 300,
+            1570873800000: 500
+          }
+        },
+        warningLimitPower: 800,
+        warningLimitEnergy: 200,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 250,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+    });
+
+    it("should not call onValidPeriodClose if period was not closed properly and new loadmonitoring data starts from step inside period", async () => {
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570873500000: 0,
+          1570873560000: 100,
+          1570873620000: 150,
+          1570873680000: 250,
+          1570873740000: 300,
+          1570873800000: 500
+        }
+      };
+
+      await exec();
+
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+    });
+
+    it("should not call onTransgression if period was not closed properly", async () => {
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570873500000: 0,
+          1570873560000: 100,
+          1570873620000: 150,
+          1570873680000: 250,
+          1570873740000: 300,
+          1570873800000: 500
+        }
+      };
+
+      await exec();
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+    });
   });
+
+  //TO DO!!!!
+  //CHECK _refresh !!
 });
