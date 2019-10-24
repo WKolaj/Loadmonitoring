@@ -4872,6 +4872,269 @@ describe("Loadmonitoring", () => {
     });
   });
 
-  //TO DO!!!!
-  //CHECK _refresh !!
+  describe("_refresh", () => {});
+
+  let fileStorage;
+  let fileStorageInitPayload;
+
+  let loadmonitoring;
+  let loadmonitoringFileContent;
+  let initialLoadmonitoringPayload;
+
+  let lastPeriodAveragePower;
+
+  let newLoadmonitoringData;
+  let actualDate;
+
+  let onValidPeriodCloseMockFunc;
+  let onPeriodStepChangeMockFunc;
+  let onPeriodChangeMockFunc;
+  let onTransgressionMockFunc;
+  let getLoadmonitoringDataMockFunc;
+
+  let initialPeriodBeginDate;
+  let initialPeriodEndDate;
+  let initialPeriodBeginEnergy;
+  let initialPeriodEndPredictedEnergy;
+  let initialPeriodEndPredictedPower;
+  let initialPeriodCounterValues;
+  let initialPeriodPowerValues;
+  let initialPeriodPredictedCounterValues;
+  let initialLastPeriodAveragePower;
+  let initialStepBeginDate;
+  let initialStepBeginEnergy;
+  let initialStepEndDate;
+  let initialLastStepAveragePower;
+  let initialLoadmonitoringData;
+  let initLoadmonitoring;
+
+  beforeEach(async () => {
+    fileStorage = new FileStorage();
+    fileStorageInitPayload = {
+      filePath: loadmonitoringPathName
+    };
+
+    initLoadmonitoring = true;
+
+    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+    initialPeriodBeginEnergy = 123000;
+    initialPeriodEndPredictedEnergy = 965;
+    initialPeriodEndPredictedPower = 3860;
+    initialPeriodCounterValues = {
+      1570871700000: 0,
+      1570871760000: 101,
+      1570871820000: 152,
+      1570871880000: 203,
+      1570871940000: 304,
+      1570872000000: 355,
+      1570872060000: 406,
+      1570872120000: 457,
+      1570872180000: 608,
+      1570872240000: 659,
+      1570872300000: 710,
+      1570872360000: 761,
+      1570872420000: 762,
+      1570872480000: 863,
+      1570872540000: 914
+    };
+    initialPeriodPowerValues = {
+      1570871760000: 101,
+      1570871820000: 51,
+      1570871880000: 51,
+      1570871940000: 101,
+      1570872000000: 51,
+      1570872060000: 51,
+      1570872120000: 51,
+      1570872180000: 151,
+      1570872240000: 51,
+      1570872300000: 51,
+      1570872360000: 51,
+      1570872420000: 1,
+      1570872480000: 101,
+      1570872540000: 51
+    };
+    initialPeriodPredictedCounterValues = {
+      1570872540000: 914,
+      1570872600000: 965
+    };
+    initialLastPeriodAveragePower = 0;
+    initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
+    initialStepBeginEnergy = 914;
+    initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
+    initialLastStepAveragePower = 3060;
+    initialLoadmonitoringData = {
+      initialCounterValue: 123000,
+      counters: {
+        1570871700000: 0,
+        1570871760000: 100,
+        1570871820000: 150,
+        1570871880000: 200,
+        1570871940000: 300,
+        1570872000000: 350,
+        1570872060000: 400,
+        1570872120000: 450,
+        1570872180000: 600,
+        1570872240000: 650,
+        1570872300000: 700,
+        1570872360000: 750,
+        1570872420000: 750,
+        1570872480000: 850,
+        1570872540000: 900
+      }
+    };
+
+    actualDate = new Date(1570872600000);
+
+    newLoadmonitoringData = {
+      initialCounterValue: 123000 + 1020,
+      counters: {
+        1570872600000: 0
+      }
+    };
+
+    loadmonitoringFileContent = {
+      enabled: true,
+      warning: false,
+      alert: false,
+      warningLimitPower: 800,
+      warningLimitEnergy: 200,
+      alertLimitPower: 1000,
+      alertLimitEnergy: 250,
+      lossesPower: 60
+    };
+
+    onValidPeriodCloseMockFunc = jest.fn();
+    onPeriodStepChangeMockFunc = jest.fn();
+    onPeriodChangeMockFunc = jest.fn();
+    onTransgressionMockFunc = jest.fn();
+    getLoadmonitoringDataMockFunc = jest.fn();
+  });
+
+  let exec = async () => {
+    await writeFileAsync(
+      loadmonitoringPathName,
+      JSON.stringify(loadmonitoringFileContent)
+    );
+
+    await fileStorage.init(fileStorageInitPayload);
+
+    loadmonitoring = new Loadmonitoring(fileStorage);
+
+    loadmonitoring._lastPeriodAveragePower = lastPeriodAveragePower;
+
+    if (initLoadmonitoring) await loadmonitoring.init();
+
+    getLoadmonitoringDataMockFunc.mockResolvedValue(newLoadmonitoringData);
+
+    loadmonitoring.vOnStepChange = onPeriodStepChangeMockFunc;
+    loadmonitoring.vOnValidPeriodClose = onValidPeriodCloseMockFunc;
+    loadmonitoring.vOnPeriodChange = onPeriodChangeMockFunc;
+    loadmonitoring.vOnTransgression = onTransgressionMockFunc;
+    loadmonitoring.aGetLoadmonitoringData = getLoadmonitoringDataMockFunc;
+
+    loadmonitoring._currentPeriodBeginDate = initialPeriodBeginDate;
+    loadmonitoring._currentPeriodEndDate = initialPeriodEndDate;
+    loadmonitoring._currentPeriodBeginEnergy = initialPeriodBeginEnergy;
+    loadmonitoring._currentPeriodEndPredictedEnergy = initialPeriodEndPredictedEnergy;
+    loadmonitoring._currentPeriodEndPredictedPower = initialPeriodEndPredictedPower;
+    loadmonitoring._currentPeriodCounterValues = initialPeriodCounterValues;
+    loadmonitoring._currentPeriodPowerValues = initialPeriodPowerValues;
+    loadmonitoring._currentPeriodPredictedCounterValues = initialPeriodPredictedCounterValues;
+    loadmonitoring._lastPeriodAveragePower = initialLastPeriodAveragePower;
+    loadmonitoring._currentStepBeginDate = initialStepBeginDate;
+    loadmonitoring._currentStepBeginEnergy = initialStepBeginEnergy;
+    loadmonitoring._currentStepEndDate = initialStepEndDate;
+    loadmonitoring._lastStepAveragePower = initialLastStepAveragePower;
+    loadmonitoring._currentLoadmonitoringData = initialLoadmonitoringData;
+
+    initialLoadmonitoringPayload = loadmonitoring.Payload;
+
+    await loadmonitoring.refresh(actualDate);
+  };
+
+  it("should call getLoadmonitoriong data with proper date and time - if actual date is a begining of period", async () => {
+    // 1570872600000 - 2019-10-12T09:30:00.000Z
+    actualDate = new Date(1570872600000);
+
+    await exec();
+
+    expect(getLoadmonitoringDataMockFunc).toHaveBeenCalledTimes(1);
+    //1570872600000 - 2019-10-12T09:30:00.000Z
+    expect(getLoadmonitoringDataMockFunc.mock.calls[0][0].getTime()).toEqual(
+      1570872600000
+    );
+    //1570873500000 - 2019-10-12T09:45:00.000Z
+    expect(getLoadmonitoringDataMockFunc.mock.calls[0][1].getTime()).toEqual(
+      1570873500000
+    );
+  });
+
+  it("should call getLoadmonitoriong data with proper date and time - if actual date is inside period", async () => {
+    // 1570872720000 - 2019-10-12T09:32:00.000Z
+    actualDate = new Date(1570872720000);
+
+    await exec();
+
+    expect(getLoadmonitoringDataMockFunc).toHaveBeenCalledTimes(1);
+    //1570872600000 - 2019-10-12T09:30:00.000Z
+    expect(getLoadmonitoringDataMockFunc.mock.calls[0][0].getTime()).toEqual(
+      1570872600000
+    );
+    //1570873500000 - 2019-10-12T09:45:00.000Z
+    expect(getLoadmonitoringDataMockFunc.mock.calls[0][1].getTime()).toEqual(
+      1570873500000
+    );
+  });
+
+  it("should throw if actual date is not defined", async () => {
+    actualDate = undefined;
+
+    await expect(promisifyFunc(async () => await exec())).rejects.toBeDefined();
+
+    //Nothing should be changed - the same payload as before exec
+    expect(loadmonitoring.Payload).toEqual(initialLoadmonitoringPayload);
+  });
+
+  it("should not throw but do nothing if loadmonitoring is not initialized", async () => {
+    initLoadmonitoring = false;
+
+    await expect(
+      promisifyFunc(async () => {
+        await exec();
+        return true;
+      })
+    ).resolves.toBeDefined();
+
+    //Nothing should be changed - the same payload as before exec
+    expect(loadmonitoring.Payload).toEqual(initialLoadmonitoringPayload);
+
+    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+    expect(onPeriodStepChangeMockFunc).not.toHaveBeenCalled();
+    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+    expect(getLoadmonitoringDataMockFunc).not.toHaveBeenCalled();
+  });
+
+  it("should not throw but do nothing if loadmonitoring is not enabled", async () => {
+    loadmonitoringFileContent.enabled = false;
+
+    await expect(
+      promisifyFunc(async () => {
+        await exec();
+        return true;
+      })
+    ).resolves.toBeDefined();
+
+    //Nothing should be changed - the same payload as before exec
+    expect(loadmonitoring.Payload).toEqual(initialLoadmonitoringPayload);
+
+    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+    expect(onPeriodStepChangeMockFunc).not.toHaveBeenCalled();
+    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+    expect(getLoadmonitoringDataMockFunc).not.toHaveBeenCalled();
+  });
+
+  //TO DO REST - according to excel!!!!
 });
