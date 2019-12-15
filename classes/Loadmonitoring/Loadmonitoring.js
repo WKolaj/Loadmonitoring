@@ -358,7 +358,6 @@ class Loadmonitoring {
     //Returning if not enabled or not initialized
     if (!this.Enabled) return;
     if (!this.Initialized) return;
-
     //Getting step and period ranges
     let stepAndPeriodRange = this._getPeriodAndStepFromDate(currentDate);
 
@@ -373,16 +372,19 @@ class Loadmonitoring {
       this._active = false;
       return;
     }
-
     //If loadmonitoring data is valid - set data to active
     this._active = true;
+
+    //Returning if loadmonitoring data date is not valid
+    if (!this._checkLoadmonitoringDataDate(currentDate, loadmonitoringData))
+      return;
 
     //Changing period if it should be changed
     if (
       this._shouldChangePeriod(
         currentDate,
-        stepAndPeriodRange.periodBeginDate,
-        stepAndPeriodRange.periodEndDate
+        this.CurrentPeriodBeginDate,
+        this.CurrentPeriodEndDate
       )
     ) {
       await this._changePeriod(loadmonitoringData);
@@ -391,8 +393,8 @@ class Loadmonitoring {
     else if (
       this._shouldChangeStep(
         currentDate,
-        stepAndPeriodRange.stepBeginDate,
-        stepAndPeriodRange.stepEndDate
+        this.CurrentStepBeginDate,
+        this.CurrentStepEndDate
       )
     ) {
       await this._changeStep(loadmonitoringData);
@@ -517,6 +519,46 @@ class Loadmonitoring {
         //Checking if values are sorted in ascending order
         if (value < previousValue) return false;
       }
+
+      return true;
+    } catch (err) {
+      this.logger.error(err);
+      return false;
+    }
+  }
+
+  /**
+   * @description Method for checking if load monitoring data date is valid
+   */
+  _checkLoadmonitoringDataDate(actualDate, loadmonitoringData) {
+    try {
+      //Checking if there at least one value exists
+      if (Object.keys(loadmonitoringData.counters).length <= 0) return false;
+
+      //Getting all parsed and sorted unix times
+      let allUnixTimes = Object.keys(loadmonitoringData.counters)
+        .map(key => Number(key))
+        .sort((a, b) => a - b);
+
+      let periodAndStepDateFromActualDate = this._getPeriodAndStepFromDate(
+        actualDate
+      );
+
+      let periodAndStepDateFromLoadmonitoringData = this._getPeriodAndStepFromDate(
+        new Date(allUnixTimes[0])
+      );
+
+      if (
+        periodAndStepDateFromActualDate.periodBeginDate.getTime() !==
+        periodAndStepDateFromLoadmonitoringData.periodBeginDate.getTime()
+      )
+        return false;
+
+      if (
+        periodAndStepDateFromActualDate.periodEndDate.getTime() !==
+        periodAndStepDateFromLoadmonitoringData.periodEndDate.getTime()
+      )
+        return false;
 
       return true;
     } catch (err) {
