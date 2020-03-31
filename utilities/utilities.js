@@ -171,3 +171,25 @@ module.exports.promisifyFunc = function(func, params) {
     }
   });
 };
+
+/**
+ * @description Method for generating random integer
+ */
+module.exports.getRandomInt = function(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min)) + min;
+};
+
+/**
+ * @description Method for generating random string cotaining only numbers
+ */
+module.exports.generateRandomNumberString = function(numberOfSigns) {
+  let stringToReturn = "";
+
+  for (let i = 0; i < numberOfSigns; i++) {
+    stringToReturn += module.exports.getRandomInt(0, 9).toString();
+  }
+
+  return stringToReturn;
+};

@@ -292,52 +292,5 @@ describe("FileStorage", () => {
 
       expect(content).toEqual(fileContent);
     });
-
-    it("should overwrite file and save content to it - if file does exists", async () => {
-      await exec();
-
-      let content = JSON.parse(await readFileAsync(fileStoragePathName));
-
-      expect(content).toEqual(fileContent);
-    });
-
-    it("should save empty object to a file if argument is undefined", async () => {
-      fileContent = undefined;
-
-      await exec();
-
-      let content = JSON.parse(await readFileAsync(fileStoragePathName));
-
-      expect(content).toEqual({});
-    });
-
-    it("should save empty object to a file if argument is null", async () => {
-      fileContent = null;
-
-      await exec();
-
-      let content = JSON.parse(await readFileAsync(fileStoragePathName));
-
-      expect(content).toEqual({});
-    });
-
-    it("should throw and not save anything if storage has not been initialized", async () => {
-      initStorage = false;
-
-      await expect(
-        new Promise(async (resolve, reject) => {
-          try {
-            await exec();
-            return resolve(true);
-          } catch (err) {
-            return reject(err);
-          }
-        })
-      ).rejects.toBeDefined();
-
-      let content = JSON.parse(await readFileAsync(fileStoragePathName));
-
-      expect(content).toEqual(initialFileContent);
-    });
   });
 });

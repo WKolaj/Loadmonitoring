@@ -4971,8199 +4971,8243 @@ describe("Loadmonitoring", () => {
     });
   });
 
-  describe("refresh", () => {});
-
-  let fileStorage;
-  let fileStorageInitPayload;
-
-  let loadmonitoring;
-  let loadmonitoringFileContent;
-  let initialLoadmonitoringPayload;
-
-  let lastPeriodAveragePower;
-
-  let newLoadmonitoringData;
-  let actualDate;
-
-  let onValidPeriodCloseMockFunc;
-  let onStepChangeMockFunc;
-  let onPeriodChangeMockFunc;
-  let onTransgressionMockFunc;
-  let getLoadmonitoringDataMockFunc;
-  let onAlertActivationMockFunc;
-  let onAlertDeactivationMockFunc;
-  let onWarningActivationMockFunc;
-  let onWarningDeactivationMockFunc;
-
-  let initialPeriodBeginDate;
-  let initialPeriodEndDate;
-  let initialPeriodBeginEnergy;
-  let initialPeriodEndPredictedEnergy;
-  let initialPeriodEndPredictedPower;
-  let initialPeriodCounterValues;
-  let initialPeriodPowerValues;
-  let initialPeriodPredictedCounterValues;
-  let initialLastPeriodAveragePower;
-  let initialStepBeginDate;
-  let initialStepBeginEnergy;
-  let initialStepEndDate;
-  let initialLastStepAveragePower;
-  let initialLoadmonitoringData;
-  let initLoadmonitoring;
-
-  beforeEach(async () => {
-    fileStorage = new FileStorage();
-    fileStorageInitPayload = {
-      filePath: loadmonitoringPathName
-    };
-
-    initLoadmonitoring = true;
-
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 965;
-    initialPeriodEndPredictedPower = 3860;
-    initialPeriodCounterValues = {
-      1570871700000: 0,
-      1570871760000: 101,
-      1570871820000: 152,
-      1570871880000: 203,
-      1570871940000: 304,
-      1570872000000: 355,
-      1570872060000: 406,
-      1570872120000: 457,
-      1570872180000: 608,
-      1570872240000: 659,
-      1570872300000: 710,
-      1570872360000: 761,
-      1570872420000: 762,
-      1570872480000: 863,
-      1570872540000: 914
-    };
-    initialPeriodPowerValues = {
-      1570871760000: 101,
-      1570871820000: 51,
-      1570871880000: 51,
-      1570871940000: 101,
-      1570872000000: 51,
-      1570872060000: 51,
-      1570872120000: 51,
-      1570872180000: 151,
-      1570872240000: 51,
-      1570872300000: 51,
-      1570872360000: 51,
-      1570872420000: 1,
-      1570872480000: 101,
-      1570872540000: 51
-    };
-    initialPeriodPredictedCounterValues = {
-      1570872540000: 914,
-      1570872600000: 965
-    };
-    initialLastPeriodAveragePower = 0;
-    initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
-    initialStepBeginEnergy = 914;
-    initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150,
-        1570871880000: 200,
-        1570871940000: 300,
-        1570872000000: 350,
-        1570872060000: 400,
-        1570872120000: 450,
-        1570872180000: 600,
-        1570872240000: 650,
-        1570872300000: 700,
-        1570872360000: 750,
-        1570872420000: 750,
-        1570872480000: 850,
-        1570872540000: 900
-      }
-    };
-
-    actualDate = new Date(1570872600000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 1020,
-      counters: {
-        1570872600000: 0
-      }
-    };
-
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 800,
-      warningLimitEnergy: 200,
-      alertLimitPower: 1000,
-      alertLimitEnergy: 250,
-      lossesPower: 60
-    };
-
-    onValidPeriodCloseMockFunc = jest.fn();
-    onStepChangeMockFunc = jest.fn();
-    onPeriodChangeMockFunc = jest.fn();
-    onTransgressionMockFunc = jest.fn();
-    getLoadmonitoringDataMockFunc = jest.fn();
-    onAlertActivationMockFunc = jest.fn();
-    onAlertDeactivationMockFunc = jest.fn();
-    onWarningActivationMockFunc = jest.fn();
-    onWarningDeactivationMockFunc = jest.fn();
-  });
-
-  let exec = async () => {
-    await writeFileAsync(
-      loadmonitoringPathName,
-      JSON.stringify(loadmonitoringFileContent)
-    );
-
-    await fileStorage.init(fileStorageInitPayload);
-
-    loadmonitoring = new Loadmonitoring(fileStorage);
-
-    loadmonitoring._lastPeriodAveragePower = lastPeriodAveragePower;
-
-    if (initLoadmonitoring) await loadmonitoring.init();
-
-    getLoadmonitoringDataMockFunc.mockResolvedValue(newLoadmonitoringData);
-
-    loadmonitoring.vOnStepChange = onStepChangeMockFunc;
-    loadmonitoring.vOnValidPeriodClose = onValidPeriodCloseMockFunc;
-    loadmonitoring.vOnPeriodChange = onPeriodChangeMockFunc;
-    loadmonitoring.vOnTransgression = onTransgressionMockFunc;
-    loadmonitoring.aGetLoadmonitoringData = getLoadmonitoringDataMockFunc;
-
-    loadmonitoring.vOnAlertDeactivation = onAlertDeactivationMockFunc;
-    loadmonitoring.vOnAlertActivation = onAlertActivationMockFunc;
-    loadmonitoring.vOnWarningActivation = onWarningActivationMockFunc;
-    loadmonitoring.vOnWarningDeactivation = onWarningDeactivationMockFunc;
-
-    loadmonitoring._currentPeriodBeginDate = initialPeriodBeginDate;
-    loadmonitoring._currentPeriodEndDate = initialPeriodEndDate;
-    loadmonitoring._currentPeriodBeginEnergy = initialPeriodBeginEnergy;
-    loadmonitoring._currentPeriodEndPredictedEnergy = initialPeriodEndPredictedEnergy;
-    loadmonitoring._currentPeriodEndPredictedPower = initialPeriodEndPredictedPower;
-    loadmonitoring._currentPeriodCounterValues = initialPeriodCounterValues;
-    loadmonitoring._currentPeriodPowerValues = initialPeriodPowerValues;
-    loadmonitoring._currentPeriodPredictedCounterValues = initialPeriodPredictedCounterValues;
-    loadmonitoring._lastPeriodAveragePower = initialLastPeriodAveragePower;
-    loadmonitoring._currentStepBeginDate = initialStepBeginDate;
-    loadmonitoring._currentStepBeginEnergy = initialStepBeginEnergy;
-    loadmonitoring._currentStepEndDate = initialStepEndDate;
-    loadmonitoring._lastStepAveragePower = initialLastStepAveragePower;
-    loadmonitoring._currentLoadmonitoringData = initialLoadmonitoringData;
-
-    initialLoadmonitoringPayload = loadmonitoring.Payload;
-
-    await loadmonitoring.refresh(actualDate);
-  };
-
-  it("should recalculate new loadmonitoring data if everything is valid - checking default settings", async () => {
-    await exec();
-
-    let expectedPayload = {
-      enabled: true,
-      warning: true,
-      alert: true,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 1020,
-      currentPeriodEndPredictedEnergy: 1035,
-      currentPeriodEndPredictedPower: 4140,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 69,
-        1570872720000: 138,
-        1570872780000: 207,
-        1570872840000: 276,
-        1570872900000: 345,
-        1570872960000: 414,
-        1570873020000: 483,
-        1570873080000: 552,
-        1570873140000: 621,
-        1570873200000: 690,
-        1570873260000: 759,
-        1570873320000: 828,
-        1570873380000: 897,
-        1570873440000: 966,
-        1570873500000: 1035
-      },
-      lastPeriodAveragePower: 4140,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 4140,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 800,
-      warningLimitEnergy: 200,
-      alertLimitPower: 1000,
-      alertLimitEnergy: 250,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
-
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
-  });
-
-  it("should call getLoadmonitoriong data with proper date and time - if actual date is a begining of period", async () => {
-    // 1570872600000 - 2019-10-12T09:30:00.000Z
-    actualDate = new Date(1570872600000);
-
-    await exec();
-
-    expect(getLoadmonitoringDataMockFunc).toHaveBeenCalledTimes(1);
-    //1570872600000 - 2019-10-12T09:30:00.000Z
-    expect(getLoadmonitoringDataMockFunc.mock.calls[0][0].getTime()).toEqual(
-      1570872600000
-    );
-    //1570873500000 - 2019-10-12T09:45:00.000Z
-    expect(getLoadmonitoringDataMockFunc.mock.calls[0][1].getTime()).toEqual(
-      1570873500000
-    );
-  });
-
-  it("should call getLoadmonitoriong data with proper date and time - if actual date is inside period", async () => {
-    // 1570872720000 - 2019-10-12T09:32:00.000Z
-    actualDate = new Date(1570872720000);
-
-    await exec();
-
-    expect(getLoadmonitoringDataMockFunc).toHaveBeenCalledTimes(1);
-    //1570872600000 - 2019-10-12T09:30:00.000Z
-    expect(getLoadmonitoringDataMockFunc.mock.calls[0][0].getTime()).toEqual(
-      1570872600000
-    );
-    //1570873500000 - 2019-10-12T09:45:00.000Z
-    expect(getLoadmonitoringDataMockFunc.mock.calls[0][1].getTime()).toEqual(
-      1570873500000
-    );
-  });
-
-  it("should throw if actual date is not defined", async () => {
-    actualDate = undefined;
-
-    await expect(promisifyFunc(async () => await exec())).rejects.toBeDefined();
-
-    //Nothing should be changed - the same payload as before exec
-    expect(loadmonitoring.Payload).toEqual(initialLoadmonitoringPayload);
-  });
-
-  it("should not throw but do nothing if loadmonitoring is not initialized", async () => {
-    initLoadmonitoring = false;
-
-    await expect(
-      promisifyFunc(async () => {
-        await exec();
-        return true;
-      })
-    ).resolves.toBeDefined();
-
-    //Nothing should be changed - the same payload as before exec
-    expect(loadmonitoring.Payload).toEqual(initialLoadmonitoringPayload);
-
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
-    expect(onStepChangeMockFunc).not.toHaveBeenCalled();
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
-    expect(getLoadmonitoringDataMockFunc).not.toHaveBeenCalled();
-  });
-
-  it("should not throw but do nothing if loadmonitoring is not enabled", async () => {
-    loadmonitoringFileContent.enabled = false;
-
-    await expect(
-      promisifyFunc(async () => {
-        await exec();
-        return true;
-      })
-    ).resolves.toBeDefined();
-
-    //Nothing should be changed - the same payload as before exec
-    expect(loadmonitoring.Payload).toEqual(initialLoadmonitoringPayload);
-
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
-    expect(onStepChangeMockFunc).not.toHaveBeenCalled();
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
-    expect(getLoadmonitoringDataMockFunc).not.toHaveBeenCalled();
-  });
-
-  it("should not recalculate new loadmonitoring data if data is not associated with actual date", async () => {
-    actualDate = new Date("2019-10-12T09:29:00.000Z");
-
-    //1570872600000 - 2019-10-12T09:30:00.000Z
-    initialPeriodBeginDate = {
-      initialCounterValue: 123000 + 1020,
-      counters: {
-        1570872600000: 0
-      }
-    };
-
-    await exec();
-
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: initialPeriodBeginDate,
-      currentPeriodEndDate: initialPeriodEndDate,
-      currentPeriodBeginEnergy: initialPeriodBeginEnergy,
-      currentPeriodEndPredictedEnergy: initialPeriodEndPredictedEnergy,
-      currentPeriodEndPredictedPower: initialPeriodEndPredictedPower,
-      currentPeriodCounterValues: initialPeriodCounterValues,
-      currentPeriodPowerValues: initialPeriodPowerValues,
-      currentPeriodPredictedCounterValues: initialPeriodPredictedCounterValues,
-      lastPeriodAveragePower: initialLastPeriodAveragePower,
-      currentStepBeginDate: initialStepBeginDate,
-      currentStepBeginEnergy: initialStepBeginEnergy,
-      currentStepEndDate: initialStepEndDate,
-      lastStepAveragePower: initialLastStepAveragePower,
-      currentLoadmonitoringData: initialLoadmonitoringData,
-      warningLimitPower: 800,
-      warningLimitEnergy: 200,
-      alertLimitPower: 1000,
-      alertLimitEnergy: 250,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
-
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
-  });
-
-  //#region DATA ASSOCIATED WITH 1st STEP, LAST PERIOD VALID
-
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
-
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 965;
-    initialPeriodEndPredictedPower = 3860;
-    initialPeriodCounterValues = {
-      1570871700000: 0,
-      1570871760000: 101,
-      1570871820000: 152,
-      1570871880000: 203,
-      1570871940000: 304,
-      1570872000000: 355,
-      1570872060000: 406,
-      1570872120000: 457,
-      1570872180000: 608,
-      1570872240000: 659,
-      1570872300000: 710,
-      1570872360000: 761,
-      1570872420000: 762,
-      1570872480000: 863,
-      1570872540000: 914
-    };
-    initialPeriodPowerValues = {
-      1570871760000: 101,
-      1570871820000: 51,
-      1570871880000: 51,
-      1570871940000: 101,
-      1570872000000: 51,
-      1570872060000: 51,
-      1570872120000: 51,
-      1570872180000: 151,
-      1570872240000: 51,
-      1570872300000: 51,
-      1570872360000: 51,
-      1570872420000: 1,
-      1570872480000: 101,
-      1570872540000: 51
-    };
-    initialPeriodPredictedCounterValues = {
-      1570872540000: 914,
-      1570872600000: 965
-    };
-    initialLastPeriodAveragePower = 0;
-    initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
-    initialStepBeginEnergy = 914;
-    initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150,
-        1570871880000: 200,
-        1570871940000: 300,
-        1570872000000: 350,
-        1570872060000: 400,
-        1570872120000: 450,
-        1570872180000: 600,
-        1570872240000: 650,
-        1570872300000: 700,
-        1570872360000: 750,
-        1570872420000: 750,
-        1570872480000: 850,
-        1570872540000: 900
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:30:00.000Z" - 1570872600000
-    actualDate = new Date(1570872600000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 1020,
-      counters: {
-        1570872600000: 0
-      }
-    };
-
-    //#endregion SETTING ACTUAL DATE AND DATA
-
-    //#region SETTING FILE DATA
-
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60
-    };
-
-    //#endregion SETTING FILE DATA
-
-    await exec();
-
-    //#region CHECKING PAYLOAD
-
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 1020,
-      currentPeriodEndPredictedEnergy: 1035,
-      currentPeriodEndPredictedPower: 4140,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 69,
-        1570872720000: 138,
-        1570872780000: 207,
-        1570872840000: 276,
-        1570872900000: 345,
-        1570872960000: 414,
-        1570873020000: 483,
-        1570873080000: 552,
-        1570873140000: 621,
-        1570873200000: 690,
-        1570873260000: 759,
-        1570873320000: 828,
-        1570873380000: 897,
-        1570873440000: 966,
-        1570873500000: 1035
-      },
-      lastPeriodAveragePower: 4140,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 4140,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
-
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
-
-    //#endregion CHECKING PAYLOAD
-
-    //#region CALLING ON VALID PERIOD CLOSE
-
-    expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
-    //closed period begin date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-    //closed period end date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-    //closed period average power
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-
-    //#endregion CALLING ON VALID PERIOD CLOSE
-
-    //#region CALLING ON STEP CHANGE
-
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
-
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
-
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
-    );
-
-    //#endregion CALLING ON STEP CHANGE
-
-    //#region CALLING ON TRANSGRESSION
-
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON TRANSGRESSION
-
-    //#region CALLING ON PERIOD CHANGE
-
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
-
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
-
-    //#endregion CALLING ON PERIOD CHANGE
-
-    //#region CALLING ON ALERT ACTIVATION
-
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT ACTIVATION
-
-    //#region CALLING ON ALERT DEACTIVATION
-
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT DEACTIVATION
-
-    //#region CALLING ON WARNING ACTIVATION
-
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING ACTIVATION
-
-    //#region CALLING ON WARNING DEACTIVATION
-
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
-
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power above warning limit - prevously below, power below alert limit - prevously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
-
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 965;
-    initialPeriodEndPredictedPower = 3860;
-    initialPeriodCounterValues = {
-      1570871700000: 0,
-      1570871760000: 101,
-      1570871820000: 152,
-      1570871880000: 203,
-      1570871940000: 304,
-      1570872000000: 355,
-      1570872060000: 406,
-      1570872120000: 457,
-      1570872180000: 608,
-      1570872240000: 659,
-      1570872300000: 710,
-      1570872360000: 761,
-      1570872420000: 762,
-      1570872480000: 863,
-      1570872540000: 914
-    };
-    initialPeriodPowerValues = {
-      1570871760000: 101,
-      1570871820000: 51,
-      1570871880000: 51,
-      1570871940000: 101,
-      1570872000000: 51,
-      1570872060000: 51,
-      1570872120000: 51,
-      1570872180000: 151,
-      1570872240000: 51,
-      1570872300000: 51,
-      1570872360000: 51,
-      1570872420000: 1,
-      1570872480000: 101,
-      1570872540000: 51
-    };
-    initialPeriodPredictedCounterValues = {
-      1570872540000: 914,
-      1570872600000: 965
-    };
-    initialLastPeriodAveragePower = 0;
-    initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
-    initialStepBeginEnergy = 914;
-    initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150,
-        1570871880000: 200,
-        1570871940000: 300,
-        1570872000000: 350,
-        1570872060000: 400,
-        1570872120000: 450,
-        1570872180000: 600,
-        1570872240000: 650,
-        1570872300000: 700,
-        1570872360000: 750,
-        1570872420000: 750,
-        1570872480000: 850,
-        1570872540000: 900
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:30:00.000Z" - 1570872600000
-    actualDate = new Date(1570872600000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 1020,
-      counters: {
-        1570872600000: 0
-      }
-    };
-
-    //#endregion SETTING ACTUAL DATE AND DATA
-
-    //#region SETTING FILE DATA
-
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 4000,
-      warningLimitEnergy: 4000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60
-    };
-
-    //#endregion SETTING FILE DATA
-
-    await exec();
-
-    //#region CHECKING PAYLOAD
-
-    let expectedPayload = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 1020,
-      currentPeriodEndPredictedEnergy: 1035,
-      currentPeriodEndPredictedPower: 4140,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 69,
-        1570872720000: 138,
-        1570872780000: 207,
-        1570872840000: 276,
-        1570872900000: 345,
-        1570872960000: 414,
-        1570873020000: 483,
-        1570873080000: 552,
-        1570873140000: 621,
-        1570873200000: 690,
-        1570873260000: 759,
-        1570873320000: 828,
-        1570873380000: 897,
-        1570873440000: 966,
-        1570873500000: 1035
-      },
-      lastPeriodAveragePower: 4140,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 4140,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 4000,
-      warningLimitEnergy: 4000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
-
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
-
-    //#endregion CHECKING PAYLOAD
-
-    //#region CALLING ON VALID PERIOD CLOSE
-
-    expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
-    //closed period begin date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-    //closed period end date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-    //closed period average power
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-
-    //#endregion CALLING ON VALID PERIOD CLOSE
-
-    //#region CALLING ON STEP CHANGE
-
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
-
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
-
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
-    );
-
-    //#endregion CALLING ON STEP CHANGE
-
-    //#region CALLING ON TRANSGRESSION
-
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON TRANSGRESSION
-
-    //#region CALLING ON PERIOD CHANGE
-
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
-
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
-
-    //#endregion CALLING ON PERIOD CHANGE
-
-    //#region CALLING ON ALERT ACTIVATION
-
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT ACTIVATION
-
-    //#region CALLING ON ALERT DEACTIVATION
-
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT DEACTIVATION
-
-    //#region CALLING ON WARNING ACTIVATION
-
-    expect(onWarningActivationMockFunc).toHaveBeenCalledTimes(1);
-
-    //Warning limit
-    expect(onWarningActivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
-
-    //predicted active power
-    expect(onWarningActivationMockFunc.mock.calls[0][1]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-
-    //#endregion CALLING ON WARNING ACTIVATION
-
-    //#region CALLING ON WARNING DEACTIVATION
-
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
-
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously below, power above alert limit - prevously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
-
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 965;
-    initialPeriodEndPredictedPower = 3860;
-    initialPeriodCounterValues = {
-      1570871700000: 0,
-      1570871760000: 101,
-      1570871820000: 152,
-      1570871880000: 203,
-      1570871940000: 304,
-      1570872000000: 355,
-      1570872060000: 406,
-      1570872120000: 457,
-      1570872180000: 608,
-      1570872240000: 659,
-      1570872300000: 710,
-      1570872360000: 761,
-      1570872420000: 762,
-      1570872480000: 863,
-      1570872540000: 914
-    };
-    initialPeriodPowerValues = {
-      1570871760000: 101,
-      1570871820000: 51,
-      1570871880000: 51,
-      1570871940000: 101,
-      1570872000000: 51,
-      1570872060000: 51,
-      1570872120000: 51,
-      1570872180000: 151,
-      1570872240000: 51,
-      1570872300000: 51,
-      1570872360000: 51,
-      1570872420000: 1,
-      1570872480000: 101,
-      1570872540000: 51
-    };
-    initialPeriodPredictedCounterValues = {
-      1570872540000: 914,
-      1570872600000: 965
-    };
-    initialLastPeriodAveragePower = 0;
-    initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
-    initialStepBeginEnergy = 914;
-    initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150,
-        1570871880000: 200,
-        1570871940000: 300,
-        1570872000000: 350,
-        1570872060000: 400,
-        1570872120000: 450,
-        1570872180000: 600,
-        1570872240000: 650,
-        1570872300000: 700,
-        1570872360000: 750,
-        1570872420000: 750,
-        1570872480000: 850,
-        1570872540000: 900
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:30:00.000Z" - 1570872600000
-    actualDate = new Date(1570872600000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 1020,
-      counters: {
-        1570872600000: 0
-      }
-    };
-
-    //#endregion SETTING ACTUAL DATE AND DATA
-
-    //#region SETTING FILE DATA
-
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 4000,
-      alertLimitEnergy: 4000 / 4,
-      lossesPower: 60
-    };
-
-    //#endregion SETTING FILE DATA
-
-    await exec();
-
-    //#region CHECKING PAYLOAD
-
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 1020,
-      currentPeriodEndPredictedEnergy: 1035,
-      currentPeriodEndPredictedPower: 4140,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 69,
-        1570872720000: 138,
-        1570872780000: 207,
-        1570872840000: 276,
-        1570872900000: 345,
-        1570872960000: 414,
-        1570873020000: 483,
-        1570873080000: 552,
-        1570873140000: 621,
-        1570873200000: 690,
-        1570873260000: 759,
-        1570873320000: 828,
-        1570873380000: 897,
-        1570873440000: 966,
-        1570873500000: 1035
-      },
-      lastPeriodAveragePower: 4140,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 4140,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 4000,
-      alertLimitEnergy: 4000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
-
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
-
-    //#endregion CHECKING PAYLOAD
-
-    //#region CALLING ON VALID PERIOD CLOSE
-
-    expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
-    //closed period begin date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-    //closed period end date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-    //closed period average power
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-
-    //#endregion CALLING ON VALID PERIOD CLOSE
-
-    //#region CALLING ON STEP CHANGE
-
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
-
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
-
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
-    );
-
-    //#endregion CALLING ON STEP CHANGE
-
-    //#region CALLING ON TRANSGRESSION
-
-    expect(onTransgressionMockFunc).toHaveBeenCalledTimes(1);
-
-    //Time on the begining of period
-    expect(onTransgressionMockFunc.mock.calls[0][0]).toEqual(
-      initialPeriodBeginDate
-    );
-
-    //Time on the end of period
-    expect(onTransgressionMockFunc.mock.calls[0][1]).toEqual(
-      initialPeriodEndDate
-    );
-
-    //Alert limit
-    expect(onTransgressionMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
-
-    //Value of predicted active power
-    expect(onTransgressionMockFunc.mock.calls[0][3]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-
-    //#endregion CALLING ON TRANSGRESSION
-
-    //#region CALLING ON PERIOD CHANGE
-
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
-
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
-
-    //#endregion CALLING ON PERIOD CHANGE
-
-    //#region CALLING ON ALERT ACTIVATION
-
-    expect(onAlertActivationMockFunc).toHaveBeenCalledTimes(1);
-
-    //Warning limit
-    expect(onAlertActivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
-
-    //predicted active power
-    expect(onAlertActivationMockFunc.mock.calls[0][1]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-
-    //#endregion CALLING ON ALERT ACTIVATION
-
-    //#region CALLING ON ALERT DEACTIVATION
-
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT DEACTIVATION
-
-    //#region CALLING ON WARNING ACTIVATION
-
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING ACTIVATION
-
-    //#region CALLING ON WARNING DEACTIVATION
-
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
-
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
-
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 965;
-    initialPeriodEndPredictedPower = 3860;
-    initialPeriodCounterValues = {
-      1570871700000: 0,
-      1570871760000: 101,
-      1570871820000: 152,
-      1570871880000: 203,
-      1570871940000: 304,
-      1570872000000: 355,
-      1570872060000: 406,
-      1570872120000: 457,
-      1570872180000: 608,
-      1570872240000: 659,
-      1570872300000: 710,
-      1570872360000: 761,
-      1570872420000: 762,
-      1570872480000: 863,
-      1570872540000: 914
-    };
-    initialPeriodPowerValues = {
-      1570871760000: 101,
-      1570871820000: 51,
-      1570871880000: 51,
-      1570871940000: 101,
-      1570872000000: 51,
-      1570872060000: 51,
-      1570872120000: 51,
-      1570872180000: 151,
-      1570872240000: 51,
-      1570872300000: 51,
-      1570872360000: 51,
-      1570872420000: 1,
-      1570872480000: 101,
-      1570872540000: 51
-    };
-    initialPeriodPredictedCounterValues = {
-      1570872540000: 914,
-      1570872600000: 965
-    };
-    initialLastPeriodAveragePower = 0;
-    initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
-    initialStepBeginEnergy = 914;
-    initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150,
-        1570871880000: 200,
-        1570871940000: 300,
-        1570872000000: 350,
-        1570872060000: 400,
-        1570872120000: 450,
-        1570872180000: 600,
-        1570872240000: 650,
-        1570872300000: 700,
-        1570872360000: 750,
-        1570872420000: 750,
-        1570872480000: 850,
-        1570872540000: 900
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:30:00.000Z" - 1570872600000
-    actualDate = new Date(1570872600000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 150,
-      counters: {
-        1570872600000: 0
-      }
-    };
-
-    //#endregion SETTING ACTUAL DATE AND DATA
-
-    //#region SETTING FILE DATA
-
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      warningLimitPower: 3000,
-      warningLimitEnergy: 3000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60
-    };
-
-    //#endregion SETTING FILE DATA
-
-    await exec();
-
-    //#region CHECKING PAYLOAD
-
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 150,
-      currentPeriodEndPredictedEnergy: 165,
-      currentPeriodEndPredictedPower: 660,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 11,
-        1570872720000: 22,
-        1570872780000: 33,
-        1570872840000: 44,
-        1570872900000: 55,
-        1570872960000: 66,
-        1570873020000: 77,
-        1570873080000: 88,
-        1570873140000: 99,
-        1570873200000: 110,
-        1570873260000: 121,
-        1570873320000: 132,
-        1570873380000: 143,
-        1570873440000: 154,
-        1570873500000: 165
-      },
-      lastPeriodAveragePower: 660,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 660,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 3000,
-      warningLimitEnergy: 3000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
-
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
-
-    //#endregion CHECKING PAYLOAD
-
-    //#region CALLING ON VALID PERIOD CLOSE
-
-    expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
-    //closed period begin date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-    //closed period end date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-    //closed period average power
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-
-    //#endregion CALLING ON VALID PERIOD CLOSE
-
-    //#region CALLING ON STEP CHANGE
-
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
-
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
-
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
-    );
-
-    //#endregion CALLING ON STEP CHANGE
-
-    //#region CALLING ON TRANSGRESSION
-
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON TRANSGRESSION
-
-    //#region CALLING ON PERIOD CHANGE
-
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
-
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
-
-    //#endregion CALLING ON PERIOD CHANGE
-
-    //#region CALLING ON ALERT ACTIVATION
-
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT ACTIVATION
-
-    //#region CALLING ON ALERT DEACTIVATION
-
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT DEACTIVATION
-
-    //#region CALLING ON WARNING ACTIVATION
-
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING ACTIVATION
-
-    //#region CALLING ON WARNING DEACTIVATION
-
-    expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
-
-    //Warning limit
-    expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
-
-    //predicted active power
-    expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
-
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
-    //#region SETTING INITIAL PARAMETERS
-
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 965;
-    initialPeriodEndPredictedPower = 3860;
-    initialPeriodCounterValues = {
-      1570871700000: 0,
-      1570871760000: 101,
-      1570871820000: 152,
-      1570871880000: 203,
-      1570871940000: 304,
-      1570872000000: 355,
-      1570872060000: 406,
-      1570872120000: 457,
-      1570872180000: 608,
-      1570872240000: 659,
-      1570872300000: 710,
-      1570872360000: 761,
-      1570872420000: 762,
-      1570872480000: 863,
-      1570872540000: 914
-    };
-    initialPeriodPowerValues = {
-      1570871760000: 101,
-      1570871820000: 51,
-      1570871880000: 51,
-      1570871940000: 101,
-      1570872000000: 51,
-      1570872060000: 51,
-      1570872120000: 51,
-      1570872180000: 151,
-      1570872240000: 51,
-      1570872300000: 51,
-      1570872360000: 51,
-      1570872420000: 1,
-      1570872480000: 101,
-      1570872540000: 51
-    };
-    initialPeriodPredictedCounterValues = {
-      1570872540000: 914,
-      1570872600000: 965
-    };
-    initialLastPeriodAveragePower = 0;
-    initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
-    initialStepBeginEnergy = 914;
-    initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150,
-        1570871880000: 200,
-        1570871940000: 300,
-        1570872000000: 350,
-        1570872060000: 400,
-        1570872120000: 450,
-        1570872180000: 600,
-        1570872240000: 650,
-        1570872300000: 700,
-        1570872360000: 750,
-        1570872420000: 750,
-        1570872480000: 850,
-        1570872540000: 900
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:30:00.000Z" - 1570872600000
-    actualDate = new Date(1570872600000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 150,
-      counters: {
-        1570872600000: 0
-      }
-    };
-
-    //#endregion SETTING ACTUAL DATE AND DATA
-
-    //#region SETTING FILE DATA
-
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 3000,
-      alertLimitEnergy: 3000 / 4,
-      lossesPower: 60
-    };
-
-    //#endregion SETTING FILE DATA
-
-    await exec();
-
-    //#region CHECKING PAYLOAD
-
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 150,
-      currentPeriodEndPredictedEnergy: 165,
-      currentPeriodEndPredictedPower: 660,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 11,
-        1570872720000: 22,
-        1570872780000: 33,
-        1570872840000: 44,
-        1570872900000: 55,
-        1570872960000: 66,
-        1570873020000: 77,
-        1570873080000: 88,
-        1570873140000: 99,
-        1570873200000: 110,
-        1570873260000: 121,
-        1570873320000: 132,
-        1570873380000: 143,
-        1570873440000: 154,
-        1570873500000: 165
-      },
-      lastPeriodAveragePower: 660,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 660,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 3000,
-      alertLimitEnergy: 3000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
-
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
-
-    //#endregion CHECKING PAYLOAD
-
-    //#region CALLING ON VALID PERIOD CLOSE
-
-    expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
-    //closed period begin date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-    //closed period end date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-    //closed period average power
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-
-    //#endregion CALLING ON VALID PERIOD CLOSE
-
-    //#region CALLING ON STEP CHANGE
-
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
-
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
-
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
-    );
-
-    //#endregion CALLING ON STEP CHANGE
-
-    //#region CALLING ON TRANSGRESSION
-
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON TRANSGRESSION
-
-    //#region CALLING ON PERIOD CHANGE
-
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
-
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
-
-    //#endregion CALLING ON PERIOD CHANGE
-
-    //#region CALLING ON ALERT ACTIVATION
-
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT ACTIVATION
-
-    //#region CALLING ON ALERT DEACTIVATION
-
-    expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
-
-    //Warning limit
-    expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
-
-    //predicted active power
-    expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-
-    //#endregion CALLING ON ALERT DEACTIVATION
-
-    //#region CALLING ON WARNING ACTIVATION
-
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING ACTIVATION
-
-    //#region CALLING ON WARNING DEACTIVATION
-
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
-
-  //#endregion DATA ASSOCIATED WITH 1s STEP, LAST PERIOD VALID
-
-  //#region DATA ASSOCIATED WITH 1st STEP, LAST PERIOD NOT VALID
-
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is not valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
-
-    //Current period is not valid - therfore period begin date and end date are associated with period before
-    initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 965;
-    initialPeriodEndPredictedPower = 3860;
-
-    //Setting counters without first values - last period invalid
-    initialPeriodCounterValues = {
-      1570872000000: 355,
-      1570872060000: 406,
-      1570872120000: 457,
-      1570872180000: 608,
-      1570872240000: 659,
-      1570872300000: 710,
-      1570872360000: 761,
-      1570872420000: 762,
-      1570872480000: 863,
-      1570872540000: 914
-    };
-    initialPeriodPowerValues = {
-      1570872000000: 51,
-      1570872060000: 51,
-      1570872120000: 51,
-      1570872180000: 151,
-      1570872240000: 51,
-      1570872300000: 51,
-      1570872360000: 51,
-      1570872420000: 1,
-      1570872480000: 101,
-      1570872540000: 51
-    };
-    initialPeriodPredictedCounterValues = {
-      1570872540000: 914,
-      1570872600000: 965
-    };
-    initialLastPeriodAveragePower = 0;
-    initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
-    initialStepBeginEnergy = 914;
-    initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570872000000: 350,
-        1570872060000: 400,
-        1570872120000: 450,
-        1570872180000: 600,
-        1570872240000: 650,
-        1570872300000: 700,
-        1570872360000: 750,
-        1570872420000: 750,
-        1570872480000: 850,
-        1570872540000: 900
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:30:00.000Z" - 1570872600000
-    actualDate = new Date(1570872600000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 1020,
-      counters: {
-        1570872600000: 0
-      }
-    };
-
-    //#endregion SETTING ACTUAL DATE AND DATA
-
-    //#region SETTING FILE DATA
-
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60
-    };
-
-    //#endregion SETTING FILE DATA
-
-    await exec();
-
-    //#region CHECKING PAYLOAD
-
-    //Invalid last period - last and predicted power set to 0
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 1020,
-      currentPeriodEndPredictedEnergy: 0,
-      currentPeriodEndPredictedPower: 0,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 0,
-        1570872720000: 0,
-        1570872780000: 0,
-        1570872840000: 0,
-        1570872900000: 0,
-        1570872960000: 0,
-        1570873020000: 0,
-        1570873080000: 0,
-        1570873140000: 0,
-        1570873200000: 0,
-        1570873260000: 0,
-        1570873320000: 0,
-        1570873380000: 0,
-        1570873440000: 0,
-        1570873500000: 0
-      },
-      lastPeriodAveragePower: 0,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 0,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
-
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
-
-    //#endregion CHECKING PAYLOAD
-
-    //#region CALLING ON VALID PERIOD CLOSE
-
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON VALID PERIOD CLOSE
-
-    //#region CALLING ON STEP CHANGE
-
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
-
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
-
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
-    );
-
-    //#endregion CALLING ON STEP CHANGE
-
-    //#region CALLING ON TRANSGRESSION
-
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON TRANSGRESSION
-
-    //#region CALLING ON PERIOD CHANGE
-
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
-
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
-
-    //#endregion CALLING ON PERIOD CHANGE
-
-    //#region CALLING ON ALERT ACTIVATION
-
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT ACTIVATION
-
-    //#region CALLING ON ALERT DEACTIVATION
-
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT DEACTIVATION
-
-    //#region CALLING ON WARNING ACTIVATION
-
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING ACTIVATION
-
-    //#region CALLING ON WARNING DEACTIVATION
-
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
-
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is not valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
-
-    //Current period is not valid - therfore period begin date and end date are associated with period before
-    initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 965;
-    initialPeriodEndPredictedPower = 3860;
-
-    //Setting counters without first values - last period invalid
-    initialPeriodCounterValues = {
-      1570872000000: 355,
-      1570872060000: 406,
-      1570872120000: 457,
-      1570872180000: 608,
-      1570872240000: 659,
-      1570872300000: 710,
-      1570872360000: 761,
-      1570872420000: 762,
-      1570872480000: 863,
-      1570872540000: 914
-    };
-    initialPeriodPowerValues = {
-      1570872000000: 51,
-      1570872060000: 51,
-      1570872120000: 51,
-      1570872180000: 151,
-      1570872240000: 51,
-      1570872300000: 51,
-      1570872360000: 51,
-      1570872420000: 1,
-      1570872480000: 101,
-      1570872540000: 51
-    };
-    initialPeriodPredictedCounterValues = {
-      1570872540000: 914,
-      1570872600000: 965
-    };
-    initialLastPeriodAveragePower = 0;
-    initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
-    initialStepBeginEnergy = 914;
-    initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570872000000: 350,
-        1570872060000: 400,
-        1570872120000: 450,
-        1570872180000: 600,
-        1570872240000: 650,
-        1570872300000: 700,
-        1570872360000: 750,
-        1570872420000: 750,
-        1570872480000: 850,
-        1570872540000: 900
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:30:00.000Z" - 1570872600000
-    actualDate = new Date(1570872600000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 1020,
-      counters: {
-        1570872600000: 0
-      }
-    };
-
-    //#endregion SETTING ACTUAL DATE AND DATA
-
-    //#region SETTING FILE DATA
-
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      warningLimitPower: 1000,
-      warningLimitEnergy: 1000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60
-    };
-
-    //#endregion SETTING FILE DATA
-
-    await exec();
-
-    //#region CHECKING PAYLOAD
-
-    //Invalid last period - last and predicted power set to 0
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 1020,
-      currentPeriodEndPredictedEnergy: 0,
-      currentPeriodEndPredictedPower: 0,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 0,
-        1570872720000: 0,
-        1570872780000: 0,
-        1570872840000: 0,
-        1570872900000: 0,
-        1570872960000: 0,
-        1570873020000: 0,
-        1570873080000: 0,
-        1570873140000: 0,
-        1570873200000: 0,
-        1570873260000: 0,
-        1570873320000: 0,
-        1570873380000: 0,
-        1570873440000: 0,
-        1570873500000: 0
-      },
-      lastPeriodAveragePower: 0,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 0,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 1000,
-      warningLimitEnergy: 1000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
-
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
-
-    //#endregion CHECKING PAYLOAD
-
-    //#region CALLING ON VALID PERIOD CLOSE
-
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON VALID PERIOD CLOSE
-
-    //#region CALLING ON STEP CHANGE
-
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
-
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
-
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
-    );
-
-    //#endregion CALLING ON STEP CHANGE
-
-    //#region CALLING ON TRANSGRESSION
-
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON TRANSGRESSION
-
-    //#region CALLING ON PERIOD CHANGE
-
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
-
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
-
-    //#endregion CALLING ON PERIOD CHANGE
-
-    //#region CALLING ON ALERT ACTIVATION
-
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT ACTIVATION
-
-    //#region CALLING ON ALERT DEACTIVATION
-
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT DEACTIVATION
-
-    //#region CALLING ON WARNING ACTIVATION
-
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING ACTIVATION
-
-    //#region CALLING ON WARNING DEACTIVATION
-
-    expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
-
-    //Warning limit
-    expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
-
-    //predicted active power
-    expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(0);
-
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
-
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is not valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
-    //#region SETTING INITIAL PARAMETERS
-
-    //Current period is not valid - therfore period begin date and end date are associated with period before
-    initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 965;
-    initialPeriodEndPredictedPower = 3860;
-
-    //Setting counters without first values - last period invalid
-    initialPeriodCounterValues = {
-      1570872000000: 355,
-      1570872060000: 406,
-      1570872120000: 457,
-      1570872180000: 608,
-      1570872240000: 659,
-      1570872300000: 710,
-      1570872360000: 761,
-      1570872420000: 762,
-      1570872480000: 863,
-      1570872540000: 914
-    };
-    initialPeriodPowerValues = {
-      1570872000000: 51,
-      1570872060000: 51,
-      1570872120000: 51,
-      1570872180000: 151,
-      1570872240000: 51,
-      1570872300000: 51,
-      1570872360000: 51,
-      1570872420000: 1,
-      1570872480000: 101,
-      1570872540000: 51
-    };
-    initialPeriodPredictedCounterValues = {
-      1570872540000: 914,
-      1570872600000: 965
-    };
-    initialLastPeriodAveragePower = 0;
-    initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
-    initialStepBeginEnergy = 914;
-    initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570872000000: 350,
-        1570872060000: 400,
-        1570872120000: 450,
-        1570872180000: 600,
-        1570872240000: 650,
-        1570872300000: 700,
-        1570872360000: 750,
-        1570872420000: 750,
-        1570872480000: 850,
-        1570872540000: 900
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:30:00.000Z" - 1570872600000
-    actualDate = new Date(1570872600000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 1020,
-      counters: {
-        1570872600000: 0
-      }
-    };
-
-    //#endregion SETTING ACTUAL DATE AND DATA
-
-    //#region SETTING FILE DATA
-
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 1000,
-      alertLimitEnergy: 1000 / 4,
-      lossesPower: 60
-    };
-
-    //#endregion SETTING FILE DATA
-
-    await exec();
-
-    //#region CHECKING PAYLOAD
-
-    //Invalid last period - last and predicted power set to 0
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 1020,
-      currentPeriodEndPredictedEnergy: 0,
-      currentPeriodEndPredictedPower: 0,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 0,
-        1570872720000: 0,
-        1570872780000: 0,
-        1570872840000: 0,
-        1570872900000: 0,
-        1570872960000: 0,
-        1570873020000: 0,
-        1570873080000: 0,
-        1570873140000: 0,
-        1570873200000: 0,
-        1570873260000: 0,
-        1570873320000: 0,
-        1570873380000: 0,
-        1570873440000: 0,
-        1570873500000: 0
-      },
-      lastPeriodAveragePower: 0,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 0,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 1000,
-      alertLimitEnergy: 1000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
-
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
-
-    //#endregion CHECKING PAYLOAD
-
-    //#region CALLING ON VALID PERIOD CLOSE
-
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON VALID PERIOD CLOSE
-
-    //#region CALLING ON STEP CHANGE
-
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
-
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
-
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
-    );
-
-    //#endregion CALLING ON STEP CHANGE
-
-    //#region CALLING ON TRANSGRESSION
-
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON TRANSGRESSION
-
-    //#region CALLING ON PERIOD CHANGE
-
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
-
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
-
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
-
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
-
-    //#endregion CALLING ON PERIOD CHANGE
-
-    //#region CALLING ON ALERT ACTIVATION
-
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON ALERT ACTIVATION
-
-    //#region CALLING ON ALERT DEACTIVATION
-
-    expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
-
-    //Warning limit
-    expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
-
-    //predicted active power
-    expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(0);
-
-    //#endregion CALLING ON ALERT DEACTIVATION
-
-    //#region CALLING ON WARNING ACTIVATION
-
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING ACTIVATION
-
-    //#region CALLING ON WARNING DEACTIVATION
-
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
-
-  //#endregion DATA ASSOCIATED WITH 1s STEP, LAST PERIOD NOT VALID
-
-  //#region DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD VALID, DATA VALID FROM BEGINING
-
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
-
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 1515;
-    initialPeriodEndPredictedPower = 6060;
-    initialPeriodCounterValues = {
-      1570871700000: 0,
-      1570871760000: 101
-    };
-    initialPeriodPowerValues = {
-      1570871760000: 101 * 4
-    };
-    initialPeriodPredictedCounterValues = {
-      1570871760000: 101,
-      1570871820000: 202,
-      1570871880000: 303,
-      1570871940000: 404,
-      1570872000000: 505,
-      1570872060000: 606,
-      1570872120000: 707,
-      1570872180000: 808,
-      1570872240000: 909,
-      1570872300000: 1010,
-      1570872360000: 1111,
-      1570872420000: 1212,
-      1570872480000: 1313,
-      1570872540000: 1414,
-      1570872600000: 1515
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T09:16:00.000Z");
-    initialStepBeginEnergy = 101;
-    initialStepEndDate = new Date("2019-10-12T09:17:00.000Z");
-    initialLastStepAveragePower = 101 * 60;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
-
-    //#endregion SETTING ACTUAL DATE AND DATA
-
-    //#region SETTING FILE DATA
-
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
-
-    //#endregion SETTING FILE DATA
-
-    await exec();
-
-    //#region CHECKING PAYLOAD
-
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
+  describe("refresh", () => {
+    let fileStorage;
+    let fileStorageInitPayload;
+
+    let loadmonitoring;
+    let loadmonitoringFileContent;
+    let initialLoadmonitoringPayload;
+
+    let lastPeriodAveragePower;
+
+    let newLoadmonitoringData;
+    let actualDate;
+
+    let onValidPeriodCloseMockFunc;
+    let onStepChangeMockFunc;
+    let onPeriodChangeMockFunc;
+    let onTransgressionMockFunc;
+    let getLoadmonitoringDataMockFunc;
+    let onAlertActivationMockFunc;
+    let onAlertDeactivationMockFunc;
+    let onWarningActivationMockFunc;
+    let onWarningDeactivationMockFunc;
+
+    let initialPeriodBeginDate;
+    let initialPeriodEndDate;
+    let initialPeriodBeginEnergy;
+    let initialPeriodEndPredictedEnergy;
+    let initialPeriodEndPredictedPower;
+    let initialPeriodCounterValues;
+    let initialPeriodPowerValues;
+    let initialPeriodPredictedCounterValues;
+    let initialLastPeriodAveragePower;
+    let initialStepBeginDate;
+    let initialStepBeginEnergy;
+    let initialStepEndDate;
+    let initialLastStepAveragePower;
+    let initialLoadmonitoringData;
+    let initLoadmonitoring;
+
+    beforeEach(async () => {
+      fileStorage = new FileStorage();
+      fileStorageInitPayload = {
+        filePath: loadmonitoringPathName
+      };
+
+      initLoadmonitoring = true;
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 965;
+      initialPeriodEndPredictedPower = 3860;
+      initialPeriodCounterValues = {
         1570871700000: 0,
         1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
         1570871820000: 152,
         1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 123,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
+        1570871940000: 304,
+        1570872000000: 355,
+        1570872060000: 406,
+        1570872120000: 457,
+        1570872180000: 608,
+        1570872240000: 659,
+        1570872300000: 710,
+        1570872360000: 761,
+        1570872420000: 762,
+        1570872480000: 863,
+        1570872540000: 914
+      };
+      initialPeriodPowerValues = {
+        1570871760000: 101,
+        1570871820000: 51,
+        1570871880000: 51,
+        1570871940000: 101,
+        1570872000000: 51,
+        1570872060000: 51,
+        1570872120000: 51,
+        1570872180000: 151,
+        1570872240000: 51,
+        1570872300000: 51,
+        1570872360000: 51,
+        1570872420000: 1,
+        1570872480000: 101,
+        1570872540000: 51
+      };
+      initialPeriodPredictedCounterValues = {
+        1570872540000: 914,
+        1570872600000: 965
+      };
+      initialLastPeriodAveragePower = 0;
+      initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
+      initialStepBeginEnergy = 914;
+      initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150,
+          1570871880000: 200,
+          1570871940000: 300,
+          1570872000000: 350,
+          1570872060000: 400,
+          1570872120000: 450,
+          1570872180000: 600,
+          1570872240000: 650,
+          1570872300000: 700,
+          1570872360000: 750,
+          1570872420000: 750,
+          1570872480000: 850,
+          1570872540000: 900
+        }
+      };
+
+      actualDate = new Date(1570872600000);
+
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0
+        }
+      };
+
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 800,
+        warningLimitEnergy: 200,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 250,
+        lossesPower: 60
+      };
+
+      onValidPeriodCloseMockFunc = jest.fn();
+      onStepChangeMockFunc = jest.fn();
+      onPeriodChangeMockFunc = jest.fn();
+      onTransgressionMockFunc = jest.fn();
+      getLoadmonitoringDataMockFunc = jest.fn();
+      onAlertActivationMockFunc = jest.fn();
+      onAlertDeactivationMockFunc = jest.fn();
+      onWarningActivationMockFunc = jest.fn();
+      onWarningDeactivationMockFunc = jest.fn();
+    });
+
+    let exec = async () => {
+      await writeFileAsync(
+        loadmonitoringPathName,
+        JSON.stringify(loadmonitoringFileContent)
+      );
+
+      await fileStorage.init(fileStorageInitPayload);
+
+      loadmonitoring = new Loadmonitoring(fileStorage);
+
+      loadmonitoring._lastPeriodAveragePower = lastPeriodAveragePower;
+
+      if (initLoadmonitoring) await loadmonitoring.init();
+
+      getLoadmonitoringDataMockFunc.mockResolvedValue(newLoadmonitoringData);
+
+      loadmonitoring.vOnStepChange = onStepChangeMockFunc;
+      loadmonitoring.vOnValidPeriodClose = onValidPeriodCloseMockFunc;
+      loadmonitoring.vOnPeriodChange = onPeriodChangeMockFunc;
+      loadmonitoring.vOnTransgression = onTransgressionMockFunc;
+      loadmonitoring.aGetLoadmonitoringData = getLoadmonitoringDataMockFunc;
+
+      loadmonitoring.vOnAlertDeactivation = onAlertDeactivationMockFunc;
+      loadmonitoring.vOnAlertActivation = onAlertActivationMockFunc;
+      loadmonitoring.vOnWarningActivation = onWarningActivationMockFunc;
+      loadmonitoring.vOnWarningDeactivation = onWarningDeactivationMockFunc;
+
+      loadmonitoring._currentPeriodBeginDate = initialPeriodBeginDate;
+      loadmonitoring._currentPeriodEndDate = initialPeriodEndDate;
+      loadmonitoring._currentPeriodBeginEnergy = initialPeriodBeginEnergy;
+      loadmonitoring._currentPeriodEndPredictedEnergy = initialPeriodEndPredictedEnergy;
+      loadmonitoring._currentPeriodEndPredictedPower = initialPeriodEndPredictedPower;
+      loadmonitoring._currentPeriodCounterValues = initialPeriodCounterValues;
+      loadmonitoring._currentPeriodPowerValues = initialPeriodPowerValues;
+      loadmonitoring._currentPeriodPredictedCounterValues = initialPeriodPredictedCounterValues;
+      loadmonitoring._lastPeriodAveragePower = initialLastPeriodAveragePower;
+      loadmonitoring._currentStepBeginDate = initialStepBeginDate;
+      loadmonitoring._currentStepBeginEnergy = initialStepBeginEnergy;
+      loadmonitoring._currentStepEndDate = initialStepEndDate;
+      loadmonitoring._lastStepAveragePower = initialLastStepAveragePower;
+      loadmonitoring._currentLoadmonitoringData = initialLoadmonitoringData;
+
+      initialLoadmonitoringPayload = loadmonitoring.Payload;
+
+      await loadmonitoring.refresh(actualDate);
     };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+    it("should recalculate new loadmonitoring data if everything is valid - checking default settings", async () => {
+      await exec();
 
-    //#endregion CHECKING PAYLOAD
+      let expectedPayload = {
+        enabled: true,
+        warning: true,
+        alert: true,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 1035,
+        currentPeriodEndPredictedPower: 4140,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 69,
+          1570872720000: 138,
+          1570872780000: 207,
+          1570872840000: 276,
+          1570872900000: 345,
+          1570872960000: 414,
+          1570873020000: 483,
+          1570873080000: 552,
+          1570873140000: 621,
+          1570873200000: 690,
+          1570873260000: 759,
+          1570873320000: 828,
+          1570873380000: 897,
+          1570873440000: 966,
+          1570873500000: 1035
+        },
+        lastPeriodAveragePower: 4140,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 4140,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 800,
+        warningLimitEnergy: 200,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 250,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+    });
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+    it("should call getLoadmonitoriong data with proper date and time - if actual date is a begining of period", async () => {
+      // 1570872600000 - 2019-10-12T09:30:00.000Z
+      actualDate = new Date(1570872600000);
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      await exec();
 
-    //#region CALLING ON STEP CHANGE
+      expect(getLoadmonitoringDataMockFunc).toHaveBeenCalledTimes(1);
+      //1570872600000 - 2019-10-12T09:30:00.000Z
+      expect(getLoadmonitoringDataMockFunc.mock.calls[0][0].getTime()).toEqual(
+        1570872600000
+      );
+      //1570873500000 - 2019-10-12T09:45:00.000Z
+      expect(getLoadmonitoringDataMockFunc.mock.calls[0][1].getTime()).toEqual(
+        1570873500000
+      );
+    });
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+    it("should call getLoadmonitoriong data with proper date and time - if actual date is inside period", async () => {
+      // 1570872720000 - 2019-10-12T09:32:00.000Z
+      actualDate = new Date(1570872720000);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      await exec();
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      expect(getLoadmonitoringDataMockFunc).toHaveBeenCalledTimes(1);
+      //1570872600000 - 2019-10-12T09:30:00.000Z
+      expect(getLoadmonitoringDataMockFunc.mock.calls[0][0].getTime()).toEqual(
+        1570872600000
+      );
+      //1570873500000 - 2019-10-12T09:45:00.000Z
+      expect(getLoadmonitoringDataMockFunc.mock.calls[0][1].getTime()).toEqual(
+        1570873500000
+      );
+    });
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+    it("should throw if actual date is not defined", async () => {
+      actualDate = undefined;
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      await expect(
+        promisifyFunc(async () => await exec())
+      ).rejects.toBeDefined();
 
-    //#endregion CALLING ON STEP CHANGE
+      //Nothing should be changed - the same payload as before exec
+      expect(loadmonitoring.Payload).toEqual(initialLoadmonitoringPayload);
+    });
 
-    //#region CALLING ON TRANSGRESSION
+    it("should not throw but do nothing if loadmonitoring is not initialized", async () => {
+      initLoadmonitoring = false;
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      await expect(
+        promisifyFunc(async () => {
+          await exec();
+          return true;
+        })
+      ).resolves.toBeDefined();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //Nothing should be changed - the same payload as before exec
+      expect(loadmonitoring.Payload).toEqual(initialLoadmonitoringPayload);
 
-    //#region CALLING ON PERIOD CHANGE
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      expect(onStepChangeMockFunc).not.toHaveBeenCalled();
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(getLoadmonitoringDataMockFunc).not.toHaveBeenCalled();
+    });
 
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+    it("should not throw but do nothing if loadmonitoring is not enabled", async () => {
+      loadmonitoringFileContent.enabled = false;
 
-    //#endregion CALLING ON PERIOD CHANGE
+      await expect(
+        promisifyFunc(async () => {
+          await exec();
+          return true;
+        })
+      ).resolves.toBeDefined();
 
-    //#region CALLING ON ALERT ACTIVATION
+      //Nothing should be changed - the same payload as before exec
+      expect(loadmonitoring.Payload).toEqual(initialLoadmonitoringPayload);
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      expect(onStepChangeMockFunc).not.toHaveBeenCalled();
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(getLoadmonitoringDataMockFunc).not.toHaveBeenCalled();
+    });
 
-    //#endregion CALLING ON ALERT ACTIVATION
+    it("should not recalculate new loadmonitoring data if data is not associated with actual date", async () => {
+      actualDate = new Date("2019-10-12T09:29:00.000Z");
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //1570872600000 - 2019-10-12T09:30:00.000Z
+      initialPeriodBeginDate = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0
+        }
+      };
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      await exec();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: initialPeriodBeginDate,
+        currentPeriodEndDate: initialPeriodEndDate,
+        currentPeriodBeginEnergy: initialPeriodBeginEnergy,
+        currentPeriodEndPredictedEnergy: initialPeriodEndPredictedEnergy,
+        currentPeriodEndPredictedPower: initialPeriodEndPredictedPower,
+        currentPeriodCounterValues: initialPeriodCounterValues,
+        currentPeriodPowerValues: initialPeriodPowerValues,
+        currentPeriodPredictedCounterValues: initialPeriodPredictedCounterValues,
+        lastPeriodAveragePower: initialLastPeriodAveragePower,
+        currentStepBeginDate: initialStepBeginDate,
+        currentStepBeginEnergy: initialStepBeginEnergy,
+        currentStepEndDate: initialStepEndDate,
+        lastStepAveragePower: initialLastStepAveragePower,
+        currentLoadmonitoringData: initialLoadmonitoringData,
+        warningLimitPower: 800,
+        warningLimitEnergy: 200,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 250,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    //#region CALLING ON WARNING ACTIVATION
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+    });
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+    //#region DATA ASSOCIATED WITH 1st STEP, LAST PERIOD VALID
 
-    //#endregion CALLING ON WARNING ACTIVATION
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    //#region CALLING ON WARNING DEACTIVATION
-
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
-
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
-
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power above warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
-
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 1515;
-    initialPeriodEndPredictedPower = 6060;
-    initialPeriodCounterValues = {
-      1570871700000: 0,
-      1570871760000: 101
-    };
-    initialPeriodPowerValues = {
-      1570871760000: 101 * 4
-    };
-    initialPeriodPredictedCounterValues = {
-      1570871760000: 101,
-      1570871820000: 202,
-      1570871880000: 303,
-      1570871940000: 404,
-      1570872000000: 505,
-      1570872060000: 606,
-      1570872120000: 707,
-      1570872180000: 808,
-      1570872240000: 909,
-      1570872300000: 1010,
-      1570872360000: 1111,
-      1570872420000: 1212,
-      1570872480000: 1313,
-      1570872540000: 1414,
-      1570872600000: 1515
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T09:16:00.000Z");
-    initialStepBeginEnergy = 101;
-    initialStepEndDate = new Date("2019-10-12T09:17:00.000Z");
-    initialLastStepAveragePower = 101 * 60;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
-
-    //#endregion SETTING ACTUAL DATE AND DATA
-
-    //#region SETTING FILE DATA
-
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 1000,
-      warningLimitEnergy: 1000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
-
-    //#endregion SETTING FILE DATA
-
-    await exec();
-
-    //#region CHECKING PAYLOAD
-
-    let expectedPayload = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 965;
+      initialPeriodEndPredictedPower = 3860;
+      initialPeriodCounterValues = {
         1570871700000: 0,
         1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
         1570871820000: 152,
         1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 123,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 1000,
-      warningLimitEnergy: 1000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+        1570871940000: 304,
+        1570872000000: 355,
+        1570872060000: 406,
+        1570872120000: 457,
+        1570872180000: 608,
+        1570872240000: 659,
+        1570872300000: 710,
+        1570872360000: 761,
+        1570872420000: 762,
+        1570872480000: 863,
+        1570872540000: 914
+      };
+      initialPeriodPowerValues = {
+        1570871760000: 101,
+        1570871820000: 51,
+        1570871880000: 51,
+        1570871940000: 101,
+        1570872000000: 51,
+        1570872060000: 51,
+        1570872120000: 51,
+        1570872180000: 151,
+        1570872240000: 51,
+        1570872300000: 51,
+        1570872360000: 51,
+        1570872420000: 1,
+        1570872480000: 101,
+        1570872540000: 51
+      };
+      initialPeriodPredictedCounterValues = {
+        1570872540000: 914,
+        1570872600000: 965
+      };
+      initialLastPeriodAveragePower = 0;
+      initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
+      initialStepBeginEnergy = 914;
+      initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150,
+          1570871880000: 200,
+          1570871940000: 300,
+          1570872000000: 350,
+          1570872060000: 400,
+          1570872120000: 450,
+          1570872180000: 600,
+          1570872240000: 650,
+          1570872300000: 700,
+          1570872360000: 750,
+          1570872420000: 750,
+          1570872480000: 850,
+          1570872540000: 900
+        }
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#endregion CHECKING PAYLOAD
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //"2019-10-12T09:30:00.000Z" - 1570872600000
+      actualDate = new Date(1570872600000);
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0
+        }
+      };
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region CALLING ON STEP CHANGE
+      //#region SETTING FILE DATA
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60
+      };
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //#endregion SETTING FILE DATA
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      await exec();
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //#region CHECKING PAYLOAD
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 1035,
+        currentPeriodEndPredictedPower: 4140,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 69,
+          1570872720000: 138,
+          1570872780000: 207,
+          1570872840000: 276,
+          1570872900000: 345,
+          1570872960000: 414,
+          1570873020000: 483,
+          1570873080000: 552,
+          1570873140000: 621,
+          1570873200000: 690,
+          1570873260000: 759,
+          1570873320000: 828,
+          1570873380000: 897,
+          1570873440000: 966,
+          1570873500000: 1035
+        },
+        lastPeriodAveragePower: 4140,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 4140,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    //#endregion CALLING ON STEP CHANGE
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#region CALLING ON TRANSGRESSION
+      //#endregion CHECKING PAYLOAD
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    //#endregion CALLING ON TRANSGRESSION
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      //closed period begin date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+      //closed period end date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+      //closed period average power
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
 
-    //#region CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON STEP CHANGE
 
-    //#endregion CALLING ON PERIOD CHANGE
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#region CALLING ON ALERT ACTIVATION
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
+      );
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      //#endregion CALLING ON STEP CHANGE
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON TRANSGRESSION
 
-    //#region CALLING ON WARNING ACTIVATION
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    expect(onWarningActivationMockFunc).toHaveBeenCalledTimes(1);
+      //#endregion CALLING ON TRANSGRESSION
 
-    //Warning limit
-    expect(onWarningActivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
+      //#region CALLING ON PERIOD CHANGE
 
-    //predicted active power
-    expect(onWarningActivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power above alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 1515;
-    initialPeriodEndPredictedPower = 6060;
-    initialPeriodCounterValues = {
-      1570871700000: 0,
-      1570871760000: 101
-    };
-    initialPeriodPowerValues = {
-      1570871760000: 101 * 4
-    };
-    initialPeriodPredictedCounterValues = {
-      1570871760000: 101,
-      1570871820000: 202,
-      1570871880000: 303,
-      1570871940000: 404,
-      1570872000000: 505,
-      1570872060000: 606,
-      1570872120000: 707,
-      1570872180000: 808,
-      1570872240000: 909,
-      1570872300000: 1010,
-      1570872360000: 1111,
-      1570872420000: 1212,
-      1570872480000: 1313,
-      1570872540000: 1414,
-      1570872600000: 1515
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T09:16:00.000Z");
-    initialStepBeginEnergy = 101;
-    initialStepEndDate = new Date("2019-10-12T09:17:00.000Z");
-    initialLastStepAveragePower = 101 * 60;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100
-      }
-    };
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#region CALLING ON ALERT ACTIVATION
 
-    //#region SETTING ACTUAL DATE AND DATA
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+      //#region CALLING ON ALERT DEACTIVATION
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#region SETTING FILE DATA
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 1000,
-      alertLimitEnergy: 1000 / 4,
-      lossesPower: 60
-    };
+      //#region CALLING ON WARNING ACTIVATION
 
-    //#endregion SETTING FILE DATA
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    await exec();
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CHECKING PAYLOAD
+      //#region CALLING ON WARNING DEACTIVATION
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power above warning limit - prevously below, power below alert limit - prevously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 965;
+      initialPeriodEndPredictedPower = 3860;
+      initialPeriodCounterValues = {
         1570871700000: 0,
         1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
         1570871820000: 152,
         1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 123,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 1000,
-      alertLimitEnergy: 1000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+        1570871940000: 304,
+        1570872000000: 355,
+        1570872060000: 406,
+        1570872120000: 457,
+        1570872180000: 608,
+        1570872240000: 659,
+        1570872300000: 710,
+        1570872360000: 761,
+        1570872420000: 762,
+        1570872480000: 863,
+        1570872540000: 914
+      };
+      initialPeriodPowerValues = {
+        1570871760000: 101,
+        1570871820000: 51,
+        1570871880000: 51,
+        1570871940000: 101,
+        1570872000000: 51,
+        1570872060000: 51,
+        1570872120000: 51,
+        1570872180000: 151,
+        1570872240000: 51,
+        1570872300000: 51,
+        1570872360000: 51,
+        1570872420000: 1,
+        1570872480000: 101,
+        1570872540000: 51
+      };
+      initialPeriodPredictedCounterValues = {
+        1570872540000: 914,
+        1570872600000: 965
+      };
+      initialLastPeriodAveragePower = 0;
+      initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
+      initialStepBeginEnergy = 914;
+      initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150,
+          1570871880000: 200,
+          1570871940000: 300,
+          1570872000000: 350,
+          1570872060000: 400,
+          1570872120000: 450,
+          1570872180000: 600,
+          1570872240000: 650,
+          1570872300000: 700,
+          1570872360000: 750,
+          1570872420000: 750,
+          1570872480000: 850,
+          1570872540000: 900
+        }
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#endregion CHECKING PAYLOAD
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //"2019-10-12T09:30:00.000Z" - 1570872600000
+      actualDate = new Date(1570872600000);
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0
+        }
+      };
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region CALLING ON STEP CHANGE
+      //#region SETTING FILE DATA
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 4000,
+        warningLimitEnergy: 4000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60
+      };
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //#endregion SETTING FILE DATA
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      await exec();
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //#region CHECKING PAYLOAD
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      let expectedPayload = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 1035,
+        currentPeriodEndPredictedPower: 4140,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 69,
+          1570872720000: 138,
+          1570872780000: 207,
+          1570872840000: 276,
+          1570872900000: 345,
+          1570872960000: 414,
+          1570873020000: 483,
+          1570873080000: 552,
+          1570873140000: 621,
+          1570873200000: 690,
+          1570873260000: 759,
+          1570873320000: 828,
+          1570873380000: 897,
+          1570873440000: 966,
+          1570873500000: 1035
+        },
+        lastPeriodAveragePower: 4140,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 4140,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 4000,
+        warningLimitEnergy: 4000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    //#endregion CALLING ON STEP CHANGE
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#region CALLING ON TRANSGRESSION
+      //#endregion CHECKING PAYLOAD
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    //#endregion CALLING ON TRANSGRESSION
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      //closed period begin date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+      //closed period end date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+      //closed period average power
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
 
-    //#region CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON STEP CHANGE
 
-    //#endregion CALLING ON PERIOD CHANGE
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#region CALLING ON ALERT ACTIVATION
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    expect(onAlertActivationMockFunc).toHaveBeenCalledTimes(1);
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //Warning limit
-    expect(onAlertActivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //predicted active power
-    expect(onAlertActivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 1515;
-    initialPeriodEndPredictedPower = 6060;
-    initialPeriodCounterValues = {
-      1570871700000: 0,
-      1570871760000: 101
-    };
-    initialPeriodPowerValues = {
-      1570871760000: 101 * 4
-    };
-    initialPeriodPredictedCounterValues = {
-      1570871760000: 101,
-      1570871820000: 202,
-      1570871880000: 303,
-      1570871940000: 404,
-      1570872000000: 505,
-      1570872060000: 606,
-      1570872120000: 707,
-      1570872180000: 808,
-      1570872240000: 909,
-      1570872300000: 1010,
-      1570872360000: 1111,
-      1570872420000: 1212,
-      1570872480000: 1313,
-      1570872540000: 1414,
-      1570872600000: 1515
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T09:16:00.000Z");
-    initialStepBeginEnergy = 101;
-    initialStepEndDate = new Date("2019-10-12T09:17:00.000Z");
-    initialLastStepAveragePower = 101 * 60;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100
-      }
-    };
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#region CALLING ON ALERT ACTIVATION
 
-    //#region SETTING ACTUAL DATE AND DATA
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+      //#region CALLING ON ALERT DEACTIVATION
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#region SETTING FILE DATA
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
+      //#region CALLING ON WARNING ACTIVATION
 
-    //#endregion SETTING FILE DATA
+      expect(onWarningActivationMockFunc).toHaveBeenCalledTimes(1);
 
-    await exec();
+      //Warning limit
+      expect(onWarningActivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
 
-    //#region CHECKING PAYLOAD
+      //predicted active power
+      expect(onWarningActivationMockFunc.mock.calls[0][1]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously below, power above alert limit - prevously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 965;
+      initialPeriodEndPredictedPower = 3860;
+      initialPeriodCounterValues = {
         1570871700000: 0,
         1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
         1570871820000: 152,
         1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 123,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+        1570871940000: 304,
+        1570872000000: 355,
+        1570872060000: 406,
+        1570872120000: 457,
+        1570872180000: 608,
+        1570872240000: 659,
+        1570872300000: 710,
+        1570872360000: 761,
+        1570872420000: 762,
+        1570872480000: 863,
+        1570872540000: 914
+      };
+      initialPeriodPowerValues = {
+        1570871760000: 101,
+        1570871820000: 51,
+        1570871880000: 51,
+        1570871940000: 101,
+        1570872000000: 51,
+        1570872060000: 51,
+        1570872120000: 51,
+        1570872180000: 151,
+        1570872240000: 51,
+        1570872300000: 51,
+        1570872360000: 51,
+        1570872420000: 1,
+        1570872480000: 101,
+        1570872540000: 51
+      };
+      initialPeriodPredictedCounterValues = {
+        1570872540000: 914,
+        1570872600000: 965
+      };
+      initialLastPeriodAveragePower = 0;
+      initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
+      initialStepBeginEnergy = 914;
+      initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150,
+          1570871880000: 200,
+          1570871940000: 300,
+          1570872000000: 350,
+          1570872060000: 400,
+          1570872120000: 450,
+          1570872180000: 600,
+          1570872240000: 650,
+          1570872300000: 700,
+          1570872360000: 750,
+          1570872420000: 750,
+          1570872480000: 850,
+          1570872540000: 900
+        }
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#endregion CHECKING PAYLOAD
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //"2019-10-12T09:30:00.000Z" - 1570872600000
+      actualDate = new Date(1570872600000);
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0
+        }
+      };
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region CALLING ON STEP CHANGE
+      //#region SETTING FILE DATA
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 4000,
+        alertLimitEnergy: 4000 / 4,
+        lossesPower: 60
+      };
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //#endregion SETTING FILE DATA
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      await exec();
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //#region CHECKING PAYLOAD
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 1035,
+        currentPeriodEndPredictedPower: 4140,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 69,
+          1570872720000: 138,
+          1570872780000: 207,
+          1570872840000: 276,
+          1570872900000: 345,
+          1570872960000: 414,
+          1570873020000: 483,
+          1570873080000: 552,
+          1570873140000: 621,
+          1570873200000: 690,
+          1570873260000: 759,
+          1570873320000: 828,
+          1570873380000: 897,
+          1570873440000: 966,
+          1570873500000: 1035
+        },
+        lastPeriodAveragePower: 4140,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 4140,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 4000,
+        alertLimitEnergy: 4000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    //#endregion CALLING ON STEP CHANGE
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#region CALLING ON TRANSGRESSION
+      //#endregion CHECKING PAYLOAD
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    //#endregion CALLING ON TRANSGRESSION
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      //closed period begin date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+      //closed period end date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+      //closed period average power
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
 
-    //#region CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON STEP CHANGE
 
-    //#endregion CALLING ON PERIOD CHANGE
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#region CALLING ON ALERT ACTIVATION
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
+      );
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      //#endregion CALLING ON STEP CHANGE
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON TRANSGRESSION
 
-    //#region CALLING ON WARNING ACTIVATION
+      expect(onTransgressionMockFunc).toHaveBeenCalledTimes(1);
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      //Time on the begining of period
+      expect(onTransgressionMockFunc.mock.calls[0][0]).toEqual(
+        initialPeriodBeginDate
+      );
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //Time on the end of period
+      expect(onTransgressionMockFunc.mock.calls[0][1]).toEqual(
+        initialPeriodEndDate
+      );
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //Alert limit
+      expect(onTransgressionMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
 
-    expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
+      //Value of predicted active power
+      expect(onTransgressionMockFunc.mock.calls[0][3]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
 
-    //Warning limit
-    expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
+      //#endregion CALLING ON TRANSGRESSION
 
-    //predicted active power
-    expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      //#region CALLING ON PERIOD CHANGE
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
-    //#region SETTING INITIAL PARAMETERS
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 1515;
-    initialPeriodEndPredictedPower = 6060;
-    initialPeriodCounterValues = {
-      1570871700000: 0,
-      1570871760000: 101
-    };
-    initialPeriodPowerValues = {
-      1570871760000: 101 * 4
-    };
-    initialPeriodPredictedCounterValues = {
-      1570871760000: 101,
-      1570871820000: 202,
-      1570871880000: 303,
-      1570871940000: 404,
-      1570872000000: 505,
-      1570872060000: 606,
-      1570872120000: 707,
-      1570872180000: 808,
-      1570872240000: 909,
-      1570872300000: 1010,
-      1570872360000: 1111,
-      1570872420000: 1212,
-      1570872480000: 1313,
-      1570872540000: 1414,
-      1570872600000: 1515
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T09:16:00.000Z");
-    initialStepBeginEnergy = 101;
-    initialStepEndDate = new Date("2019-10-12T09:17:00.000Z");
-    initialLastStepAveragePower = 101 * 60;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100
-      }
-    };
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#region CALLING ON ALERT ACTIVATION
 
-    //#region SETTING FILE DATA
+      expect(onAlertActivationMockFunc).toHaveBeenCalledTimes(1);
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60
-    };
+      //Warning limit
+      expect(onAlertActivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
 
-    //#endregion SETTING FILE DATA
+      //predicted active power
+      expect(onAlertActivationMockFunc.mock.calls[0][1]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
 
-    await exec();
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CHECKING PAYLOAD
+      //#region CALLING ON ALERT DEACTIVATION
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT DEACTIVATION
+
+      //#region CALLING ON WARNING ACTIVATION
+
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 965;
+      initialPeriodEndPredictedPower = 3860;
+      initialPeriodCounterValues = {
         1570871700000: 0,
         1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
         1570871820000: 152,
         1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 123,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+        1570871940000: 304,
+        1570872000000: 355,
+        1570872060000: 406,
+        1570872120000: 457,
+        1570872180000: 608,
+        1570872240000: 659,
+        1570872300000: 710,
+        1570872360000: 761,
+        1570872420000: 762,
+        1570872480000: 863,
+        1570872540000: 914
+      };
+      initialPeriodPowerValues = {
+        1570871760000: 101,
+        1570871820000: 51,
+        1570871880000: 51,
+        1570871940000: 101,
+        1570872000000: 51,
+        1570872060000: 51,
+        1570872120000: 51,
+        1570872180000: 151,
+        1570872240000: 51,
+        1570872300000: 51,
+        1570872360000: 51,
+        1570872420000: 1,
+        1570872480000: 101,
+        1570872540000: 51
+      };
+      initialPeriodPredictedCounterValues = {
+        1570872540000: 914,
+        1570872600000: 965
+      };
+      initialLastPeriodAveragePower = 0;
+      initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
+      initialStepBeginEnergy = 914;
+      initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150,
+          1570871880000: 200,
+          1570871940000: 300,
+          1570872000000: 350,
+          1570872060000: 400,
+          1570872120000: 450,
+          1570872180000: 600,
+          1570872240000: 650,
+          1570872300000: 700,
+          1570872360000: 750,
+          1570872420000: 750,
+          1570872480000: 850,
+          1570872540000: 900
+        }
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#endregion CHECKING PAYLOAD
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //"2019-10-12T09:30:00.000Z" - 1570872600000
+      actualDate = new Date(1570872600000);
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 150,
+        counters: {
+          1570872600000: 0
+        }
+      };
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region CALLING ON STEP CHANGE
+      //#region SETTING FILE DATA
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        warningLimitPower: 3000,
+        warningLimitEnergy: 3000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60
+      };
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //#endregion SETTING FILE DATA
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      await exec();
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //#region CHECKING PAYLOAD
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 150,
+        currentPeriodEndPredictedEnergy: 165,
+        currentPeriodEndPredictedPower: 660,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 11,
+          1570872720000: 22,
+          1570872780000: 33,
+          1570872840000: 44,
+          1570872900000: 55,
+          1570872960000: 66,
+          1570873020000: 77,
+          1570873080000: 88,
+          1570873140000: 99,
+          1570873200000: 110,
+          1570873260000: 121,
+          1570873320000: 132,
+          1570873380000: 143,
+          1570873440000: 154,
+          1570873500000: 165
+        },
+        lastPeriodAveragePower: 660,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 660,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 3000,
+        warningLimitEnergy: 3000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    //#endregion CALLING ON STEP CHANGE
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#region CALLING ON TRANSGRESSION
+      //#endregion CHECKING PAYLOAD
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    //#endregion CALLING ON TRANSGRESSION
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      //closed period begin date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+      //closed period end date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+      //closed period average power
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
 
-    //#region CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON STEP CHANGE
 
-    //#endregion CALLING ON PERIOD CHANGE
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#region CALLING ON ALERT ACTIVATION
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
+      );
 
-    expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
+      //#endregion CALLING ON STEP CHANGE
 
-    //Warning limit
-    expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
+      //#region CALLING ON TRANSGRESSION
 
-    //predicted active power
-    expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-  //#endregion DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD VALID, DATA VALID
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-  //#region DATA ASSOCIATED WITH 1st STEP SKIP ONE PERIOD
+      //#endregion CALLING ON PERIOD CHANGE
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+      //#region CALLING ON ALERT ACTIVATION
 
-    initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 5460 / 4;
-    initialPeriodEndPredictedPower = 5460;
-    initialPeriodCounterValues = {
-      1570869900000: 0,
-      1570869960000: 51,
-      1570870020000: 152,
-      1570870080000: 203,
-      1570870140000: 254,
-      1570870200000: 355,
-      1570870260000: 456,
-      1570870320000: 557
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 3060,
-      1570870920000: 6060,
-      1570870980000: 3060,
-      1570871040000: 3060,
-      1570871100000: 6060,
-      1570871160000: 6060,
-      1570871220000: 6060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570870320000: 557,
-      1570870380000: 658,
-      1570870440000: 759,
-      1570870500000: 860,
-      1570870560000: 961,
-      1570870620000: 1062,
-      1570870680000: 1163,
-      1570870740000: 1264,
-      1570870800000: 1365
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
-    initialStepBeginEnergy = 557;
-    initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
-    initialLastStepAveragePower = 6060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT ACTIVATION
+
+      //#region CALLING ON ALERT DEACTIVATION
+
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT DEACTIVATION
+
+      //#region CALLING ON WARNING ACTIVATION
+
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
+
+      //Warning limit
+      expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
+
+      //predicted active power
+      expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 965;
+      initialPeriodEndPredictedPower = 3860;
+      initialPeriodCounterValues = {
+        1570871700000: 0,
+        1570871760000: 101,
+        1570871820000: 152,
+        1570871880000: 203,
+        1570871940000: 304,
+        1570872000000: 355,
+        1570872060000: 406,
+        1570872120000: 457,
+        1570872180000: 608,
+        1570872240000: 659,
+        1570872300000: 710,
+        1570872360000: 761,
+        1570872420000: 762,
+        1570872480000: 863,
+        1570872540000: 914
+      };
+      initialPeriodPowerValues = {
+        1570871760000: 101,
+        1570871820000: 51,
+        1570871880000: 51,
+        1570871940000: 101,
+        1570872000000: 51,
+        1570872060000: 51,
+        1570872120000: 51,
+        1570872180000: 151,
+        1570872240000: 51,
+        1570872300000: 51,
+        1570872360000: 51,
+        1570872420000: 1,
+        1570872480000: 101,
+        1570872540000: 51
+      };
+      initialPeriodPredictedCounterValues = {
+        1570872540000: 914,
+        1570872600000: 965
+      };
+      initialLastPeriodAveragePower = 0;
+      initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
+      initialStepBeginEnergy = 914;
+      initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150,
+          1570871880000: 200,
+          1570871940000: 300,
+          1570872000000: 350,
+          1570872060000: 400,
+          1570872120000: 450,
+          1570872180000: 600,
+          1570872240000: 650,
+          1570872300000: 700,
+          1570872360000: 750,
+          1570872420000: 750,
+          1570872480000: 850,
+          1570872540000: 900
+        }
+      };
+
+      //#endregion SETTING INITIAL PARAMETERS
+
+      //#region SETTING ACTUAL DATE AND DATA
+
+      //"2019-10-12T09:30:00.000Z" - 1570872600000
+      actualDate = new Date(1570872600000);
+
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 150,
+        counters: {
+          1570872600000: 0
+        }
+      };
+
+      //#endregion SETTING ACTUAL DATE AND DATA
+
+      //#region SETTING FILE DATA
+
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 3000,
+        alertLimitEnergy: 3000 / 4,
+        lossesPower: 60
+      };
+
+      //#endregion SETTING FILE DATA
+
+      await exec();
+
+      //#region CHECKING PAYLOAD
+
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 150,
+        currentPeriodEndPredictedEnergy: 165,
+        currentPeriodEndPredictedPower: 660,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 11,
+          1570872720000: 22,
+          1570872780000: 33,
+          1570872840000: 44,
+          1570872900000: 55,
+          1570872960000: 66,
+          1570873020000: 77,
+          1570873080000: 88,
+          1570873140000: 99,
+          1570873200000: 110,
+          1570873260000: 121,
+          1570873320000: 132,
+          1570873380000: 143,
+          1570873440000: 154,
+          1570873500000: 165
+        },
+        lastPeriodAveragePower: 660,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 660,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 3000,
+        alertLimitEnergy: 3000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+
+      //#endregion CHECKING PAYLOAD
+
+      //#region CALLING ON VALID PERIOD CLOSE
+
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      //closed period begin date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+      //closed period end date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+      //closed period average power
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
+
+      //#endregion CALLING ON VALID PERIOD CLOSE
+
+      //#region CALLING ON STEP CHANGE
+
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
+
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
+
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
+
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
+      );
+
+      //#endregion CALLING ON STEP CHANGE
+
+      //#region CALLING ON TRANSGRESSION
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON TRANSGRESSION
+
+      //#region CALLING ON PERIOD CHANGE
+
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
+
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
+
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
+
+      //#endregion CALLING ON PERIOD CHANGE
+
+      //#region CALLING ON ALERT ACTIVATION
+
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT ACTIVATION
+
+      //#region CALLING ON ALERT DEACTIVATION
+
+      expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
+
+      //Warning limit
+      expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
+
+      //predicted active power
+      expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
+
+      //#endregion CALLING ON ALERT DEACTIVATION
+
+      //#region CALLING ON WARNING ACTIVATION
+
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    //#endregion DATA ASSOCIATED WITH 1s STEP, LAST PERIOD VALID
+
+    //#region DATA ASSOCIATED WITH 1st STEP, LAST PERIOD NOT VALID
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is not valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      //Current period is not valid - therfore period begin date and end date are associated with period before
+      initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 965;
+      initialPeriodEndPredictedPower = 3860;
+
+      //Setting counters without first values - last period invalid
+      initialPeriodCounterValues = {
+        1570872000000: 355,
+        1570872060000: 406,
+        1570872120000: 457,
+        1570872180000: 608,
+        1570872240000: 659,
+        1570872300000: 710,
+        1570872360000: 761,
+        1570872420000: 762,
+        1570872480000: 863,
+        1570872540000: 914
+      };
+      initialPeriodPowerValues = {
+        1570872000000: 51,
+        1570872060000: 51,
+        1570872120000: 51,
+        1570872180000: 151,
+        1570872240000: 51,
+        1570872300000: 51,
+        1570872360000: 51,
+        1570872420000: 1,
+        1570872480000: 101,
+        1570872540000: 51
+      };
+      initialPeriodPredictedCounterValues = {
+        1570872540000: 914,
+        1570872600000: 965
+      };
+      initialLastPeriodAveragePower = 0;
+      initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
+      initialStepBeginEnergy = 914;
+      initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570872000000: 350,
+          1570872060000: 400,
+          1570872120000: 450,
+          1570872180000: 600,
+          1570872240000: 650,
+          1570872300000: 700,
+          1570872360000: 750,
+          1570872420000: 750,
+          1570872480000: 850,
+          1570872540000: 900
+        }
+      };
+
+      //#endregion SETTING INITIAL PARAMETERS
+
+      //#region SETTING ACTUAL DATE AND DATA
+
+      //"2019-10-12T09:30:00.000Z" - 1570872600000
+      actualDate = new Date(1570872600000);
+
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0
+        }
+      };
+
+      //#endregion SETTING ACTUAL DATE AND DATA
+
+      //#region SETTING FILE DATA
+
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60
+      };
+
+      //#endregion SETTING FILE DATA
+
+      await exec();
+
+      //#region CHECKING PAYLOAD
+
+      //Invalid last period - last and predicted power set to 0
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 0,
+        currentPeriodEndPredictedPower: 0,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 0,
+          1570872720000: 0,
+          1570872780000: 0,
+          1570872840000: 0,
+          1570872900000: 0,
+          1570872960000: 0,
+          1570873020000: 0,
+          1570873080000: 0,
+          1570873140000: 0,
+          1570873200000: 0,
+          1570873260000: 0,
+          1570873320000: 0,
+          1570873380000: 0,
+          1570873440000: 0,
+          1570873500000: 0
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 0,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+
+      //#endregion CHECKING PAYLOAD
+
+      //#region CALLING ON VALID PERIOD CLOSE
+
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON VALID PERIOD CLOSE
+
+      //#region CALLING ON STEP CHANGE
+
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
+
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
+
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
+
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
+      );
+
+      //#endregion CALLING ON STEP CHANGE
+
+      //#region CALLING ON TRANSGRESSION
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON TRANSGRESSION
+
+      //#region CALLING ON PERIOD CHANGE
+
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
+
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
+
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
+
+      //#endregion CALLING ON PERIOD CHANGE
+
+      //#region CALLING ON ALERT ACTIVATION
+
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT ACTIVATION
+
+      //#region CALLING ON ALERT DEACTIVATION
+
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT DEACTIVATION
+
+      //#region CALLING ON WARNING ACTIVATION
+
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is not valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      //Current period is not valid - therfore period begin date and end date are associated with period before
+      initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 965;
+      initialPeriodEndPredictedPower = 3860;
+
+      //Setting counters without first values - last period invalid
+      initialPeriodCounterValues = {
+        1570872000000: 355,
+        1570872060000: 406,
+        1570872120000: 457,
+        1570872180000: 608,
+        1570872240000: 659,
+        1570872300000: 710,
+        1570872360000: 761,
+        1570872420000: 762,
+        1570872480000: 863,
+        1570872540000: 914
+      };
+      initialPeriodPowerValues = {
+        1570872000000: 51,
+        1570872060000: 51,
+        1570872120000: 51,
+        1570872180000: 151,
+        1570872240000: 51,
+        1570872300000: 51,
+        1570872360000: 51,
+        1570872420000: 1,
+        1570872480000: 101,
+        1570872540000: 51
+      };
+      initialPeriodPredictedCounterValues = {
+        1570872540000: 914,
+        1570872600000: 965
+      };
+      initialLastPeriodAveragePower = 0;
+      initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
+      initialStepBeginEnergy = 914;
+      initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570872000000: 350,
+          1570872060000: 400,
+          1570872120000: 450,
+          1570872180000: 600,
+          1570872240000: 650,
+          1570872300000: 700,
+          1570872360000: 750,
+          1570872420000: 750,
+          1570872480000: 850,
+          1570872540000: 900
+        }
+      };
+
+      //#endregion SETTING INITIAL PARAMETERS
+
+      //#region SETTING ACTUAL DATE AND DATA
+
+      //"2019-10-12T09:30:00.000Z" - 1570872600000
+      actualDate = new Date(1570872600000);
+
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0
+        }
+      };
+
+      //#endregion SETTING ACTUAL DATE AND DATA
+
+      //#region SETTING FILE DATA
+
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        warningLimitPower: 1000,
+        warningLimitEnergy: 1000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60
+      };
+
+      //#endregion SETTING FILE DATA
+
+      await exec();
+
+      //#region CHECKING PAYLOAD
+
+      //Invalid last period - last and predicted power set to 0
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 0,
+        currentPeriodEndPredictedPower: 0,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 0,
+          1570872720000: 0,
+          1570872780000: 0,
+          1570872840000: 0,
+          1570872900000: 0,
+          1570872960000: 0,
+          1570873020000: 0,
+          1570873080000: 0,
+          1570873140000: 0,
+          1570873200000: 0,
+          1570873260000: 0,
+          1570873320000: 0,
+          1570873380000: 0,
+          1570873440000: 0,
+          1570873500000: 0
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 0,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 1000,
+        warningLimitEnergy: 1000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+
+      //#endregion CHECKING PAYLOAD
+
+      //#region CALLING ON VALID PERIOD CLOSE
+
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON VALID PERIOD CLOSE
+
+      //#region CALLING ON STEP CHANGE
+
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
+
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
+
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
+
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
+      );
+
+      //#endregion CALLING ON STEP CHANGE
+
+      //#region CALLING ON TRANSGRESSION
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON TRANSGRESSION
+
+      //#region CALLING ON PERIOD CHANGE
+
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
+
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
+
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
+
+      //#endregion CALLING ON PERIOD CHANGE
+
+      //#region CALLING ON ALERT ACTIVATION
+
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT ACTIVATION
+
+      //#region CALLING ON ALERT DEACTIVATION
+
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT DEACTIVATION
+
+      //#region CALLING ON WARNING ACTIVATION
+
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
+
+      //Warning limit
+      expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
+
+      //predicted active power
+      expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(0);
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is not valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      //Current period is not valid - therfore period begin date and end date are associated with period before
+      initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 965;
+      initialPeriodEndPredictedPower = 3860;
+
+      //Setting counters without first values - last period invalid
+      initialPeriodCounterValues = {
+        1570872000000: 355,
+        1570872060000: 406,
+        1570872120000: 457,
+        1570872180000: 608,
+        1570872240000: 659,
+        1570872300000: 710,
+        1570872360000: 761,
+        1570872420000: 762,
+        1570872480000: 863,
+        1570872540000: 914
+      };
+      initialPeriodPowerValues = {
+        1570872000000: 51,
+        1570872060000: 51,
+        1570872120000: 51,
+        1570872180000: 151,
+        1570872240000: 51,
+        1570872300000: 51,
+        1570872360000: 51,
+        1570872420000: 1,
+        1570872480000: 101,
+        1570872540000: 51
+      };
+      initialPeriodPredictedCounterValues = {
+        1570872540000: 914,
+        1570872600000: 965
+      };
+      initialLastPeriodAveragePower = 0;
+      initialStepBeginDate = new Date("2019-10-12T09:29:00.000Z");
+      initialStepBeginEnergy = 914;
+      initialStepEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570872000000: 350,
+          1570872060000: 400,
+          1570872120000: 450,
+          1570872180000: 600,
+          1570872240000: 650,
+          1570872300000: 700,
+          1570872360000: 750,
+          1570872420000: 750,
+          1570872480000: 850,
+          1570872540000: 900
+        }
+      };
+
+      //#endregion SETTING INITIAL PARAMETERS
+
+      //#region SETTING ACTUAL DATE AND DATA
+
+      //"2019-10-12T09:30:00.000Z" - 1570872600000
+      actualDate = new Date(1570872600000);
+
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0
+        }
+      };
+
+      //#endregion SETTING ACTUAL DATE AND DATA
+
+      //#region SETTING FILE DATA
+
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 1000 / 4,
+        lossesPower: 60
+      };
+
+      //#endregion SETTING FILE DATA
+
+      await exec();
+
+      //#region CHECKING PAYLOAD
+
+      //Invalid last period - last and predicted power set to 0
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 0,
+        currentPeriodEndPredictedPower: 0,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 0,
+          1570872720000: 0,
+          1570872780000: 0,
+          1570872840000: 0,
+          1570872900000: 0,
+          1570872960000: 0,
+          1570873020000: 0,
+          1570873080000: 0,
+          1570873140000: 0,
+          1570873200000: 0,
+          1570873260000: 0,
+          1570873320000: 0,
+          1570873380000: 0,
+          1570873440000: 0,
+          1570873500000: 0
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 0,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 1000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+
+      //#endregion CHECKING PAYLOAD
+
+      //#region CALLING ON VALID PERIOD CLOSE
+
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON VALID PERIOD CLOSE
+
+      //#region CALLING ON STEP CHANGE
+
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
+
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
+
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
+
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
+      );
+
+      //#endregion CALLING ON STEP CHANGE
+
+      //#region CALLING ON TRANSGRESSION
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON TRANSGRESSION
+
+      //#region CALLING ON PERIOD CHANGE
+
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
+
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
+
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
+
+      //#endregion CALLING ON PERIOD CHANGE
+
+      //#region CALLING ON ALERT ACTIVATION
+
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT ACTIVATION
+
+      //#region CALLING ON ALERT DEACTIVATION
+
+      expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
+
+      //Warning limit
+      expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
+
+      //predicted active power
+      expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(0);
+
+      //#endregion CALLING ON ALERT DEACTIVATION
+
+      //#region CALLING ON WARNING ACTIVATION
+
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    //#endregion DATA ASSOCIATED WITH 1s STEP, LAST PERIOD NOT VALID
+
+    //#region DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD VALID, DATA VALID FROM BEGINING
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 1515;
+      initialPeriodEndPredictedPower = 6060;
+      initialPeriodCounterValues = {
+        1570871700000: 0,
+        1570871760000: 101
+      };
+      initialPeriodPowerValues = {
+        1570871760000: 101 * 4
+      };
+      initialPeriodPredictedCounterValues = {
+        1570871760000: 101,
+        1570871820000: 202,
+        1570871880000: 303,
+        1570871940000: 404,
+        1570872000000: 505,
+        1570872060000: 606,
+        1570872120000: 707,
+        1570872180000: 808,
+        1570872240000: 909,
+        1570872300000: 1010,
+        1570872360000: 1111,
+        1570872420000: 1212,
+        1570872480000: 1313,
+        1570872540000: 1414,
+        1570872600000: 1515
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T09:16:00.000Z");
+      initialStepBeginEnergy = 101;
+      initialStepEndDate = new Date("2019-10-12T09:17:00.000Z");
+      initialLastStepAveragePower = 101 * 60;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100
+        }
+      };
+
+      //#endregion SETTING INITIAL PARAMETERS
+
+      //#region SETTING ACTUAL DATE AND DATA
+
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
+
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
+
+      //#endregion SETTING ACTUAL DATE AND DATA
+
+      //#region SETTING FILE DATA
+
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
+
+      //#endregion SETTING FILE DATA
+
+      await exec();
+
+      //#region CHECKING PAYLOAD
+
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 123,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+
+      //#endregion CHECKING PAYLOAD
+
+      //#region CALLING ON VALID PERIOD CLOSE
+
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON VALID PERIOD CLOSE
+
+      //#region CALLING ON STEP CHANGE
+
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
+
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
+
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
+
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
+
+      //#endregion CALLING ON STEP CHANGE
+
+      //#region CALLING ON TRANSGRESSION
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON TRANSGRESSION
+
+      //#region CALLING ON PERIOD CHANGE
+
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON PERIOD CHANGE
+
+      //#region CALLING ON ALERT ACTIVATION
+
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT ACTIVATION
+
+      //#region CALLING ON ALERT DEACTIVATION
+
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT DEACTIVATION
+
+      //#region CALLING ON WARNING ACTIVATION
+
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power above warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 1515;
+      initialPeriodEndPredictedPower = 6060;
+      initialPeriodCounterValues = {
+        1570871700000: 0,
+        1570871760000: 101
+      };
+      initialPeriodPowerValues = {
+        1570871760000: 101 * 4
+      };
+      initialPeriodPredictedCounterValues = {
+        1570871760000: 101,
+        1570871820000: 202,
+        1570871880000: 303,
+        1570871940000: 404,
+        1570872000000: 505,
+        1570872060000: 606,
+        1570872120000: 707,
+        1570872180000: 808,
+        1570872240000: 909,
+        1570872300000: 1010,
+        1570872360000: 1111,
+        1570872420000: 1212,
+        1570872480000: 1313,
+        1570872540000: 1414,
+        1570872600000: 1515
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T09:16:00.000Z");
+      initialStepBeginEnergy = 101;
+      initialStepEndDate = new Date("2019-10-12T09:17:00.000Z");
+      initialLastStepAveragePower = 101 * 60;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100
+        }
+      };
+
+      //#endregion SETTING INITIAL PARAMETERS
+
+      //#region SETTING ACTUAL DATE AND DATA
+
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
+
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
+
+      //#endregion SETTING ACTUAL DATE AND DATA
+
+      //#region SETTING FILE DATA
+
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 1000,
+        warningLimitEnergy: 1000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
+
+      //#endregion SETTING FILE DATA
+
+      await exec();
+
+      //#region CHECKING PAYLOAD
+
+      let expectedPayload = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 123,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 1000,
+        warningLimitEnergy: 1000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+
+      //#endregion CHECKING PAYLOAD
+
+      //#region CALLING ON VALID PERIOD CLOSE
+
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON VALID PERIOD CLOSE
+
+      //#region CALLING ON STEP CHANGE
+
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
+
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
+
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
+
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
+
+      //#endregion CALLING ON STEP CHANGE
+
+      //#region CALLING ON TRANSGRESSION
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON TRANSGRESSION
+
+      //#region CALLING ON PERIOD CHANGE
+
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON PERIOD CHANGE
+
+      //#region CALLING ON ALERT ACTIVATION
+
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT ACTIVATION
+
+      //#region CALLING ON ALERT DEACTIVATION
+
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT DEACTIVATION
+
+      //#region CALLING ON WARNING ACTIVATION
+
+      expect(onWarningActivationMockFunc).toHaveBeenCalledTimes(1);
+
+      //Warning limit
+      expect(onWarningActivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
+
+      //predicted active power
+      expect(onWarningActivationMockFunc.mock.calls[0][1]).toEqual(3260);
+
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power above alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 1515;
+      initialPeriodEndPredictedPower = 6060;
+      initialPeriodCounterValues = {
+        1570871700000: 0,
+        1570871760000: 101
+      };
+      initialPeriodPowerValues = {
+        1570871760000: 101 * 4
+      };
+      initialPeriodPredictedCounterValues = {
+        1570871760000: 101,
+        1570871820000: 202,
+        1570871880000: 303,
+        1570871940000: 404,
+        1570872000000: 505,
+        1570872060000: 606,
+        1570872120000: 707,
+        1570872180000: 808,
+        1570872240000: 909,
+        1570872300000: 1010,
+        1570872360000: 1111,
+        1570872420000: 1212,
+        1570872480000: 1313,
+        1570872540000: 1414,
+        1570872600000: 1515
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T09:16:00.000Z");
+      initialStepBeginEnergy = 101;
+      initialStepEndDate = new Date("2019-10-12T09:17:00.000Z");
+      initialLastStepAveragePower = 101 * 60;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100
+        }
+      };
+
+      //#endregion SETTING INITIAL PARAMETERS
+
+      //#region SETTING ACTUAL DATE AND DATA
+
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
+
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
+
+      //#endregion SETTING ACTUAL DATE AND DATA
+
+      //#region SETTING FILE DATA
+
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 1000 / 4,
+        lossesPower: 60
+      };
+
+      //#endregion SETTING FILE DATA
+
+      await exec();
+
+      //#region CHECKING PAYLOAD
+
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 123,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 1000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+
+      //#endregion CHECKING PAYLOAD
+
+      //#region CALLING ON VALID PERIOD CLOSE
+
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON VALID PERIOD CLOSE
+
+      //#region CALLING ON STEP CHANGE
+
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
+
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
+
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
+
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
+
+      //#endregion CALLING ON STEP CHANGE
+
+      //#region CALLING ON TRANSGRESSION
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON TRANSGRESSION
+
+      //#region CALLING ON PERIOD CHANGE
+
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON PERIOD CHANGE
+
+      //#region CALLING ON ALERT ACTIVATION
+
+      expect(onAlertActivationMockFunc).toHaveBeenCalledTimes(1);
+
+      //Warning limit
+      expect(onAlertActivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
+
+      //predicted active power
+      expect(onAlertActivationMockFunc.mock.calls[0][1]).toEqual(3260);
+
+      //#endregion CALLING ON ALERT ACTIVATION
+
+      //#region CALLING ON ALERT DEACTIVATION
+
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT DEACTIVATION
+
+      //#region CALLING ON WARNING ACTIVATION
+
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 1515;
+      initialPeriodEndPredictedPower = 6060;
+      initialPeriodCounterValues = {
+        1570871700000: 0,
+        1570871760000: 101
+      };
+      initialPeriodPowerValues = {
+        1570871760000: 101 * 4
+      };
+      initialPeriodPredictedCounterValues = {
+        1570871760000: 101,
+        1570871820000: 202,
+        1570871880000: 303,
+        1570871940000: 404,
+        1570872000000: 505,
+        1570872060000: 606,
+        1570872120000: 707,
+        1570872180000: 808,
+        1570872240000: 909,
+        1570872300000: 1010,
+        1570872360000: 1111,
+        1570872420000: 1212,
+        1570872480000: 1313,
+        1570872540000: 1414,
+        1570872600000: 1515
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T09:16:00.000Z");
+      initialStepBeginEnergy = 101;
+      initialStepEndDate = new Date("2019-10-12T09:17:00.000Z");
+      initialLastStepAveragePower = 101 * 60;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100
+        }
+      };
+
+      //#endregion SETTING INITIAL PARAMETERS
+
+      //#region SETTING ACTUAL DATE AND DATA
+
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
+
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
+
+      //#endregion SETTING ACTUAL DATE AND DATA
+
+      //#region SETTING FILE DATA
+
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
+
+      //#endregion SETTING FILE DATA
+
+      await exec();
+
+      //#region CHECKING PAYLOAD
+
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 123,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+
+      //#endregion CHECKING PAYLOAD
+
+      //#region CALLING ON VALID PERIOD CLOSE
+
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON VALID PERIOD CLOSE
+
+      //#region CALLING ON STEP CHANGE
+
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
+
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
+
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
+
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
+
+      //#endregion CALLING ON STEP CHANGE
+
+      //#region CALLING ON TRANSGRESSION
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON TRANSGRESSION
+
+      //#region CALLING ON PERIOD CHANGE
+
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON PERIOD CHANGE
+
+      //#region CALLING ON ALERT ACTIVATION
+
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT ACTIVATION
+
+      //#region CALLING ON ALERT DEACTIVATION
+
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT DEACTIVATION
+
+      //#region CALLING ON WARNING ACTIVATION
+
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
+
+      //Warning limit
+      expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
+
+      //predicted active power
+      expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 1515;
+      initialPeriodEndPredictedPower = 6060;
+      initialPeriodCounterValues = {
+        1570871700000: 0,
+        1570871760000: 101
+      };
+      initialPeriodPowerValues = {
+        1570871760000: 101 * 4
+      };
+      initialPeriodPredictedCounterValues = {
+        1570871760000: 101,
+        1570871820000: 202,
+        1570871880000: 303,
+        1570871940000: 404,
+        1570872000000: 505,
+        1570872060000: 606,
+        1570872120000: 707,
+        1570872180000: 808,
+        1570872240000: 909,
+        1570872300000: 1010,
+        1570872360000: 1111,
+        1570872420000: 1212,
+        1570872480000: 1313,
+        1570872540000: 1414,
+        1570872600000: 1515
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T09:16:00.000Z");
+      initialStepBeginEnergy = 101;
+      initialStepEndDate = new Date("2019-10-12T09:17:00.000Z");
+      initialLastStepAveragePower = 101 * 60;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100
+        }
+      };
+
+      //#endregion SETTING INITIAL PARAMETERS
+
+      //#region SETTING ACTUAL DATE AND DATA
+
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
+
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
+
+      //#endregion SETTING ACTUAL DATE AND DATA
+
+      //#region SETTING FILE DATA
+
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60
+      };
+
+      //#endregion SETTING FILE DATA
+
+      await exec();
+
+      //#region CHECKING PAYLOAD
+
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 123,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
+
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
+
+      //#endregion CHECKING PAYLOAD
+
+      //#region CALLING ON VALID PERIOD CLOSE
+
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON VALID PERIOD CLOSE
+
+      //#region CALLING ON STEP CHANGE
+
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
+
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
+
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
+
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
+
+      //#endregion CALLING ON STEP CHANGE
+
+      //#region CALLING ON TRANSGRESSION
+
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON TRANSGRESSION
+
+      //#region CALLING ON PERIOD CHANGE
+
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON PERIOD CHANGE
+
+      //#region CALLING ON ALERT ACTIVATION
+
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON ALERT ACTIVATION
+
+      //#region CALLING ON ALERT DEACTIVATION
+
+      expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
+
+      //Warning limit
+      expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
+
+      //predicted active power
+      expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
+
+      //#endregion CALLING ON ALERT DEACTIVATION
+
+      //#region CALLING ON WARNING ACTIVATION
+
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING ACTIVATION
+
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    //#endregion DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD VALID, DATA VALID
+
+    //#region DATA ASSOCIATED WITH 1st STEP SKIP ONE PERIOD
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 5460 / 4;
+      initialPeriodEndPredictedPower = 5460;
+      initialPeriodCounterValues = {
         1570869900000: 0,
-        1570869960000: 50,
-        1570870020000: 150,
-        1570870080000: 200,
-        1570870140000: 250,
-        1570870200000: 350,
-        1570870260000: 450,
-        1570870320000: 550
-      }
-    };
+        1570869960000: 51,
+        1570870020000: 152,
+        1570870080000: 203,
+        1570870140000: 254,
+        1570870200000: 355,
+        1570870260000: 456,
+        1570870320000: 557
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 3060,
+        1570870920000: 6060,
+        1570870980000: 3060,
+        1570871040000: 3060,
+        1570871100000: 6060,
+        1570871160000: 6060,
+        1570871220000: 6060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570870320000: 557,
+        1570870380000: 658,
+        1570870440000: 759,
+        1570870500000: 860,
+        1570870560000: 961,
+        1570870620000: 1062,
+        1570870680000: 1163,
+        1570870740000: 1264,
+        1570870800000: 1365
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
+      initialStepBeginEnergy = 557;
+      initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
+      initialLastStepAveragePower = 6060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570869900000: 0,
+          1570869960000: 50,
+          1570870020000: 150,
+          1570870080000: 200,
+          1570870140000: 250,
+          1570870200000: 350,
+          1570870260000: 450,
+          1570870320000: 550
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:30:00.000Z" - 1570872600000
-    actualDate = new Date(1570872600000);
+      //"2019-10-12T09:30:00.000Z" - 1570872600000
+      actualDate = new Date(1570872600000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 1020,
-      counters: {
-        1570872600000: 0
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 1020,
-      currentPeriodEndPredictedEnergy: 0,
-      currentPeriodEndPredictedPower: 0,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 0,
-        1570872720000: 0,
-        1570872780000: 0,
-        1570872840000: 0,
-        1570872900000: 0,
-        1570872960000: 0,
-        1570873020000: 0,
-        1570873080000: 0,
-        1570873140000: 0,
-        1570873200000: 0,
-        1570873260000: 0,
-        1570873320000: 0,
-        1570873380000: 0,
-        1570873440000: 0,
-        1570873500000: 0
-      },
-      lastPeriodAveragePower: 0,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 0,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 0,
+        currentPeriodEndPredictedPower: 0,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 0,
+          1570872720000: 0,
+          1570872780000: 0,
+          1570872840000: 0,
+          1570872900000: 0,
+          1570872960000: 0,
+          1570873020000: 0,
+          1570873080000: 0,
+          1570873140000: 0,
+          1570873200000: 0,
+          1570873260000: 0,
+          1570873320000: 0,
+          1570873380000: 0,
+          1570873440000: 0,
+          1570873500000: 0
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 0,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 5460 / 4;
-    initialPeriodEndPredictedPower = 5460;
-    initialPeriodCounterValues = {
-      1570869900000: 0,
-      1570869960000: 51,
-      1570870020000: 152,
-      1570870080000: 203,
-      1570870140000: 254,
-      1570870200000: 355,
-      1570870260000: 456,
-      1570870320000: 557
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 3060,
-      1570870920000: 6060,
-      1570870980000: 3060,
-      1570871040000: 3060,
-      1570871100000: 6060,
-      1570871160000: 6060,
-      1570871220000: 6060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570870320000: 557,
-      1570870380000: 658,
-      1570870440000: 759,
-      1570870500000: 860,
-      1570870560000: 961,
-      1570870620000: 1062,
-      1570870680000: 1163,
-      1570870740000: 1264,
-      1570870800000: 1365
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
-    initialStepBeginEnergy = 557;
-    initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
-    initialLastStepAveragePower = 6060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 5460 / 4;
+      initialPeriodEndPredictedPower = 5460;
+      initialPeriodCounterValues = {
         1570869900000: 0,
-        1570869960000: 50,
-        1570870020000: 150,
-        1570870080000: 200,
-        1570870140000: 250,
-        1570870200000: 350,
-        1570870260000: 450,
-        1570870320000: 550
-      }
-    };
+        1570869960000: 51,
+        1570870020000: 152,
+        1570870080000: 203,
+        1570870140000: 254,
+        1570870200000: 355,
+        1570870260000: 456,
+        1570870320000: 557
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 3060,
+        1570870920000: 6060,
+        1570870980000: 3060,
+        1570871040000: 3060,
+        1570871100000: 6060,
+        1570871160000: 6060,
+        1570871220000: 6060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570870320000: 557,
+        1570870380000: 658,
+        1570870440000: 759,
+        1570870500000: 860,
+        1570870560000: 961,
+        1570870620000: 1062,
+        1570870680000: 1163,
+        1570870740000: 1264,
+        1570870800000: 1365
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
+      initialStepBeginEnergy = 557;
+      initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
+      initialLastStepAveragePower = 6060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570869900000: 0,
+          1570869960000: 50,
+          1570870020000: 150,
+          1570870080000: 200,
+          1570870140000: 250,
+          1570870200000: 350,
+          1570870260000: 450,
+          1570870320000: 550
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:30:00.000Z" - 1570872600000
-    actualDate = new Date(1570872600000);
+      //"2019-10-12T09:30:00.000Z" - 1570872600000
+      actualDate = new Date(1570872600000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 1020,
-      counters: {
-        1570872600000: 0
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 1020,
-      currentPeriodEndPredictedEnergy: 0,
-      currentPeriodEndPredictedPower: 0,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 0,
-        1570872720000: 0,
-        1570872780000: 0,
-        1570872840000: 0,
-        1570872900000: 0,
-        1570872960000: 0,
-        1570873020000: 0,
-        1570873080000: 0,
-        1570873140000: 0,
-        1570873200000: 0,
-        1570873260000: 0,
-        1570873320000: 0,
-        1570873380000: 0,
-        1570873440000: 0,
-        1570873500000: 0
-      },
-      lastPeriodAveragePower: 0,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 0,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 5000,
-      warningLimitEnergy: 5000 / 4,
-      alertLimitPower: 6000,
-      alertLimitEnergy: 6000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 0,
+        currentPeriodEndPredictedPower: 0,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 0,
+          1570872720000: 0,
+          1570872780000: 0,
+          1570872840000: 0,
+          1570872900000: 0,
+          1570872960000: 0,
+          1570873020000: 0,
+          1570873080000: 0,
+          1570873140000: 0,
+          1570873200000: 0,
+          1570873260000: 0,
+          1570873320000: 0,
+          1570873380000: 0,
+          1570873440000: 0,
+          1570873500000: 0
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 0,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 5000,
+        warningLimitEnergy: 5000 / 4,
+        alertLimitPower: 6000,
+        alertLimitEnergy: 6000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
+      expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
 
-    //Warning limit
-    expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
+      //Warning limit
+      expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
 
-    //predicted active power
-    expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(0);
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //predicted active power
+      expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(0);
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 1st step and is valid and lastPeriod is valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 5460 / 4;
-    initialPeriodEndPredictedPower = 5460;
-    initialPeriodCounterValues = {
-      1570869900000: 0,
-      1570869960000: 51,
-      1570870020000: 152,
-      1570870080000: 203,
-      1570870140000: 254,
-      1570870200000: 355,
-      1570870260000: 456,
-      1570870320000: 557
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 3060,
-      1570870920000: 6060,
-      1570870980000: 3060,
-      1570871040000: 3060,
-      1570871100000: 6060,
-      1570871160000: 6060,
-      1570871220000: 6060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570870320000: 557,
-      1570870380000: 658,
-      1570870440000: 759,
-      1570870500000: 860,
-      1570870560000: 961,
-      1570870620000: 1062,
-      1570870680000: 1163,
-      1570870740000: 1264,
-      1570870800000: 1365
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
-    initialStepBeginEnergy = 557;
-    initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
-    initialLastStepAveragePower = 6060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 5460 / 4;
+      initialPeriodEndPredictedPower = 5460;
+      initialPeriodCounterValues = {
         1570869900000: 0,
-        1570869960000: 50,
-        1570870020000: 150,
-        1570870080000: 200,
-        1570870140000: 250,
-        1570870200000: 350,
-        1570870260000: 450,
-        1570870320000: 550
-      }
-    };
+        1570869960000: 51,
+        1570870020000: 152,
+        1570870080000: 203,
+        1570870140000: 254,
+        1570870200000: 355,
+        1570870260000: 456,
+        1570870320000: 557
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 3060,
+        1570870920000: 6060,
+        1570870980000: 3060,
+        1570871040000: 3060,
+        1570871100000: 6060,
+        1570871160000: 6060,
+        1570871220000: 6060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570870320000: 557,
+        1570870380000: 658,
+        1570870440000: 759,
+        1570870500000: 860,
+        1570870560000: 961,
+        1570870620000: 1062,
+        1570870680000: 1163,
+        1570870740000: 1264,
+        1570870800000: 1365
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
+      initialStepBeginEnergy = 557;
+      initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
+      initialLastStepAveragePower = 6060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570869900000: 0,
+          1570869960000: 50,
+          1570870020000: 150,
+          1570870080000: 200,
+          1570870140000: 250,
+          1570870200000: 350,
+          1570870260000: 450,
+          1570870320000: 550
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:30:00.000Z" - 1570872600000
-    actualDate = new Date(1570872600000);
+      //"2019-10-12T09:30:00.000Z" - 1570872600000
+      actualDate = new Date(1570872600000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 123000 + 1020,
-      counters: {
-        1570872600000: 0
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 123000 + 1020,
+        counters: {
+          1570872600000: 0
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      warningLimitPower: 60000,
-      warningLimitEnergy: 60000 / 4,
-      alertLimitPower: 5000,
-      alertLimitEnergy: 5000 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        warningLimitPower: 60000,
+        warningLimitEnergy: 60000 / 4,
+        alertLimitPower: 5000,
+        alertLimitEnergy: 5000 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
-      currentPeriodBeginEnergy: 123000 + 1020,
-      currentPeriodEndPredictedEnergy: 0,
-      currentPeriodEndPredictedPower: 0,
-      currentPeriodCounterValues: {
-        1570872600000: 0
-      },
-      currentPeriodPowerValues: {},
-      currentPeriodPredictedCounterValues: {
-        1570872600000: 0,
-        1570872660000: 0,
-        1570872720000: 0,
-        1570872780000: 0,
-        1570872840000: 0,
-        1570872900000: 0,
-        1570872960000: 0,
-        1570873020000: 0,
-        1570873080000: 0,
-        1570873140000: 0,
-        1570873200000: 0,
-        1570873260000: 0,
-        1570873320000: 0,
-        1570873380000: 0,
-        1570873440000: 0,
-        1570873500000: 0
-      },
-      lastPeriodAveragePower: 0,
-      currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentStepBeginEnergy: 0,
-      currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
-      lastStepAveragePower: 0,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 60000,
-      warningLimitEnergy: 60000 / 4,
-      alertLimitPower: 5000,
-      alertLimitEnergy: 5000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:45:00.000Z"),
+        currentPeriodBeginEnergy: 123000 + 1020,
+        currentPeriodEndPredictedEnergy: 0,
+        currentPeriodEndPredictedPower: 0,
+        currentPeriodCounterValues: {
+          1570872600000: 0
+        },
+        currentPeriodPowerValues: {},
+        currentPeriodPredictedCounterValues: {
+          1570872600000: 0,
+          1570872660000: 0,
+          1570872720000: 0,
+          1570872780000: 0,
+          1570872840000: 0,
+          1570872900000: 0,
+          1570872960000: 0,
+          1570873020000: 0,
+          1570873080000: 0,
+          1570873140000: 0,
+          1570873200000: 0,
+          1570873260000: 0,
+          1570873320000: 0,
+          1570873380000: 0,
+          1570873440000: 0,
+          1570873500000: 0
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentStepBeginEnergy: 0,
+        currentStepEndDate: new Date("2019-10-12T09:31:00.000Z"),
+        lastStepAveragePower: 0,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 60000,
+        warningLimitEnergy: 60000 / 4,
+        alertLimitPower: 5000,
+        alertLimitEnergy: 5000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
+      expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
 
-    //Warning limit
-    expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
+      //Warning limit
+      expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
 
-    //predicted active power
-    expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(0);
+      //predicted active power
+      expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(0);
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  //#endregion DATA ASSOCIATED WITH 1st STEP SKIP ONE PERIOD
+    //#endregion DATA ASSOCIATED WITH 1st STEP SKIP ONE PERIOD
 
-  //#region DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD VALID, DATA SKIPS ONE STEP
+    //#region DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD VALID, DATA SKIPS ONE STEP
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 492 / 4;
-    initialPeriodEndPredictedPower = 492;
-    initialPeriodCounterValues = {
-      1570871700000: 0
-    };
-    initialPeriodPowerValues = {};
-    initialPeriodPredictedCounterValues = {
-      1570871700000: 0,
-      1570871760000: 8.2,
-      1570871820000: 16.4,
-      1570871880000: 24.6,
-      1570871940000: 32.8,
-      1570872000000: 41,
-      1570872060000: 49.2,
-      1570872120000: 57.4,
-      1570872180000: 65.6,
-      1570872240000: 73.8,
-      1570872300000: 82,
-      1570872360000: 90.2,
-      1570872420000: 98.4,
-      1570872480000: 106.6,
-      1570872540000: 114.8,
-      1570872600000: 123
-    };
-    initialLastPeriodAveragePower = 492;
-    initialStepBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialStepBeginEnergy = 0;
-    initialStepEndDate = new Date("2019-10-12T09:16:00.000Z");
-    initialLastStepAveragePower = 492;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 492 / 4;
+      initialPeriodEndPredictedPower = 492;
+      initialPeriodCounterValues = {
         1570871700000: 0
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      };
+      initialPeriodPowerValues = {};
+      initialPeriodPredictedCounterValues = {
         1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+        1570871760000: 8.2,
+        1570871820000: 16.4,
+        1570871880000: 24.6,
+        1570871940000: 32.8,
+        1570872000000: 41,
+        1570872060000: 49.2,
+        1570872120000: 57.4,
+        1570872180000: 65.6,
+        1570872240000: 73.8,
+        1570872300000: 82,
+        1570872360000: 90.2,
+        1570872420000: 98.4,
+        1570872480000: 106.6,
+        1570872540000: 114.8,
+        1570872600000: 123
+      };
+      initialLastPeriodAveragePower = 492;
+      initialStepBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialStepBeginEnergy = 0;
+      initialStepEndDate = new Date("2019-10-12T09:16:00.000Z");
+      initialLastStepAveragePower = 492;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING FILE DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    //#endregion SETTING FILE DATA
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
 
-    await exec();
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region CHECKING PAYLOAD
+      //#region SETTING FILE DATA
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 492,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      //#endregion SETTING FILE DATA
 
-    //#endregion CHECKING PAYLOAD
+      await exec();
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CHECKING PAYLOAD
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 492,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#region CALLING ON STEP CHANGE
+      //#endregion CHECKING PAYLOAD
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //#region CALLING ON STEP CHANGE
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#endregion CALLING ON STEP CHANGE
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //#region CALLING ON TRANSGRESSION
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //#endregion CALLING ON TRANSGRESSION
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#region CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON TRANSGRESSION
 
-    //#endregion CALLING ON PERIOD CHANGE
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON TRANSGRESSION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON PERIOD CHANGE
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON PERIOD CHANGE
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON ALERT ACTIVATION
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON ALERT DEACTIVATION
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON WARNING ACTIVATION
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power above warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 492 / 4;
-    initialPeriodEndPredictedPower = 492;
-    initialPeriodCounterValues = {
-      1570871700000: 0
-    };
-    initialPeriodPowerValues = {};
-    initialPeriodPredictedCounterValues = {
-      1570871700000: 0,
-      1570871760000: 8.2,
-      1570871820000: 16.4,
-      1570871880000: 24.6,
-      1570871940000: 32.8,
-      1570872000000: 41,
-      1570872060000: 49.2,
-      1570872120000: 57.4,
-      1570872180000: 65.6,
-      1570872240000: 73.8,
-      1570872300000: 82,
-      1570872360000: 90.2,
-      1570872420000: 98.4,
-      1570872480000: 106.6,
-      1570872540000: 114.8,
-      1570872600000: 123
-    };
-    initialLastPeriodAveragePower = 492;
-    initialStepBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialStepBeginEnergy = 0;
-    initialStepEndDate = new Date("2019-10-12T09:16:00.000Z");
-    initialLastStepAveragePower = 492;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power above warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 492 / 4;
+      initialPeriodEndPredictedPower = 492;
+      initialPeriodCounterValues = {
         1570871700000: 0
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      };
+      initialPeriodPowerValues = {};
+      initialPeriodPredictedCounterValues = {
         1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+        1570871760000: 8.2,
+        1570871820000: 16.4,
+        1570871880000: 24.6,
+        1570871940000: 32.8,
+        1570872000000: 41,
+        1570872060000: 49.2,
+        1570872120000: 57.4,
+        1570872180000: 65.6,
+        1570872240000: 73.8,
+        1570872300000: 82,
+        1570872360000: 90.2,
+        1570872420000: 98.4,
+        1570872480000: 106.6,
+        1570872540000: 114.8,
+        1570872600000: 123
+      };
+      initialLastPeriodAveragePower = 492;
+      initialStepBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialStepBeginEnergy = 0;
+      initialStepEndDate = new Date("2019-10-12T09:16:00.000Z");
+      initialLastStepAveragePower = 492;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING FILE DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 1000,
-      warningLimitEnergy: 1000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    //#endregion SETTING FILE DATA
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
 
-    await exec();
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region CHECKING PAYLOAD
+      //#region SETTING FILE DATA
 
-    let expectedPayload = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 492,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 1000,
-      warningLimitEnergy: 1000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 1000,
+        warningLimitEnergy: 1000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      //#endregion SETTING FILE DATA
 
-    //#endregion CHECKING PAYLOAD
+      await exec();
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CHECKING PAYLOAD
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      let expectedPayload = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 492,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 1000,
+        warningLimitEnergy: 1000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#region CALLING ON STEP CHANGE
+      //#endregion CHECKING PAYLOAD
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //#region CALLING ON STEP CHANGE
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#endregion CALLING ON STEP CHANGE
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //#region CALLING ON TRANSGRESSION
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //#endregion CALLING ON TRANSGRESSION
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#region CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON TRANSGRESSION
 
-    //#endregion CALLING ON PERIOD CHANGE
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON TRANSGRESSION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON PERIOD CHANGE
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON PERIOD CHANGE
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON ALERT ACTIVATION
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    expect(onWarningActivationMockFunc).toHaveBeenCalledTimes(1);
+      //#region CALLING ON ALERT DEACTIVATION
 
-    //Warning limit
-    expect(onWarningActivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //predicted active power
-    expect(onWarningActivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      expect(onWarningActivationMockFunc).toHaveBeenCalledTimes(1);
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      //Warning limit
+      expect(onWarningActivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //predicted active power
+      expect(onWarningActivationMockFunc.mock.calls[0][1]).toEqual(3260);
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power above alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 492 / 4;
-    initialPeriodEndPredictedPower = 492;
-    initialPeriodCounterValues = {
-      1570871700000: 0
-    };
-    initialPeriodPowerValues = {};
-    initialPeriodPredictedCounterValues = {
-      1570871700000: 0,
-      1570871760000: 8.2,
-      1570871820000: 16.4,
-      1570871880000: 24.6,
-      1570871940000: 32.8,
-      1570872000000: 41,
-      1570872060000: 49.2,
-      1570872120000: 57.4,
-      1570872180000: 65.6,
-      1570872240000: 73.8,
-      1570872300000: 82,
-      1570872360000: 90.2,
-      1570872420000: 98.4,
-      1570872480000: 106.6,
-      1570872540000: 114.8,
-      1570872600000: 123
-    };
-    initialLastPeriodAveragePower = 492;
-    initialStepBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialStepBeginEnergy = 0;
-    initialStepEndDate = new Date("2019-10-12T09:16:00.000Z");
-    initialLastStepAveragePower = 492;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power above alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 492 / 4;
+      initialPeriodEndPredictedPower = 492;
+      initialPeriodCounterValues = {
         1570871700000: 0
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      };
+      initialPeriodPowerValues = {};
+      initialPeriodPredictedCounterValues = {
         1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+        1570871760000: 8.2,
+        1570871820000: 16.4,
+        1570871880000: 24.6,
+        1570871940000: 32.8,
+        1570872000000: 41,
+        1570872060000: 49.2,
+        1570872120000: 57.4,
+        1570872180000: 65.6,
+        1570872240000: 73.8,
+        1570872300000: 82,
+        1570872360000: 90.2,
+        1570872420000: 98.4,
+        1570872480000: 106.6,
+        1570872540000: 114.8,
+        1570872600000: 123
+      };
+      initialLastPeriodAveragePower = 492;
+      initialStepBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialStepBeginEnergy = 0;
+      initialStepEndDate = new Date("2019-10-12T09:16:00.000Z");
+      initialLastStepAveragePower = 492;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING FILE DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 1000,
-      alertLimitEnergy: 1000 / 4,
-      lossesPower: 60
-    };
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    //#endregion SETTING FILE DATA
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
 
-    await exec();
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region CHECKING PAYLOAD
+      //#region SETTING FILE DATA
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 492,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 1000,
-      alertLimitEnergy: 1000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 1000 / 4,
+        lossesPower: 60
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      //#endregion SETTING FILE DATA
 
-    //#endregion CHECKING PAYLOAD
+      await exec();
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CHECKING PAYLOAD
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 492,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 1000,
+        alertLimitEnergy: 1000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#region CALLING ON STEP CHANGE
+      //#endregion CHECKING PAYLOAD
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //#region CALLING ON STEP CHANGE
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#endregion CALLING ON STEP CHANGE
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //#region CALLING ON TRANSGRESSION
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //#endregion CALLING ON TRANSGRESSION
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#region CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON TRANSGRESSION
 
-    //#endregion CALLING ON PERIOD CHANGE
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON TRANSGRESSION
 
-    expect(onAlertActivationMockFunc).toHaveBeenCalledTimes(1);
+      //#region CALLING ON PERIOD CHANGE
 
-    //Warning limit
-    expect(onAlertActivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
 
-    //predicted active power
-    expect(onAlertActivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      expect(onAlertActivationMockFunc).toHaveBeenCalledTimes(1);
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      //Warning limit
+      expect(onAlertActivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //predicted active power
+      expect(onAlertActivationMockFunc.mock.calls[0][1]).toEqual(3260);
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON ALERT DEACTIVATION
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON WARNING ACTIVATION
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 3500 / 4;
-    initialPeriodEndPredictedPower = 3500;
-    initialPeriodCounterValues = {
-      1570871700000: 0
-    };
-    initialPeriodPowerValues = {};
-    initialPeriodPredictedCounterValues = {
-      1570871700000: 0,
-      1570871760000: 8.2,
-      1570871820000: 16.4,
-      1570871880000: 24.6,
-      1570871940000: 32.8,
-      1570872000000: 41,
-      1570872060000: 49.2,
-      1570872120000: 57.4,
-      1570872180000: 65.6,
-      1570872240000: 73.8,
-      1570872300000: 82,
-      1570872360000: 90.2,
-      1570872420000: 98.4,
-      1570872480000: 106.6,
-      1570872540000: 114.8,
-      1570872600000: 123
-    };
-    initialLastPeriodAveragePower = 3500;
-    initialStepBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialStepBeginEnergy = 0;
-    initialStepEndDate = new Date("2019-10-12T09:16:00.000Z");
-    initialLastStepAveragePower = 3500;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      //#region CALLING ON WARNING DEACTIVATION
+
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 3500 / 4;
+      initialPeriodEndPredictedPower = 3500;
+      initialPeriodCounterValues = {
         1570871700000: 0
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      };
+      initialPeriodPowerValues = {};
+      initialPeriodPredictedCounterValues = {
         1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+        1570871760000: 8.2,
+        1570871820000: 16.4,
+        1570871880000: 24.6,
+        1570871940000: 32.8,
+        1570872000000: 41,
+        1570872060000: 49.2,
+        1570872120000: 57.4,
+        1570872180000: 65.6,
+        1570872240000: 73.8,
+        1570872300000: 82,
+        1570872360000: 90.2,
+        1570872420000: 98.4,
+        1570872480000: 106.6,
+        1570872540000: 114.8,
+        1570872600000: 123
+      };
+      initialLastPeriodAveragePower = 3500;
+      initialStepBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialStepBeginEnergy = 0;
+      initialStepEndDate = new Date("2019-10-12T09:16:00.000Z");
+      initialLastStepAveragePower = 3500;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING FILE DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      warningLimitPower: 3400,
-      warningLimitEnergy: 3400 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    //#endregion SETTING FILE DATA
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
 
-    await exec();
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region CHECKING PAYLOAD
+      //#region SETTING FILE DATA
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 3500,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 3400,
-      warningLimitEnergy: 3400 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        warningLimitPower: 3400,
+        warningLimitEnergy: 3400 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      //#endregion SETTING FILE DATA
 
-    //#endregion CHECKING PAYLOAD
+      await exec();
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CHECKING PAYLOAD
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 3500,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 3400,
+        warningLimitEnergy: 3400 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#region CALLING ON STEP CHANGE
+      //#endregion CHECKING PAYLOAD
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //#region CALLING ON STEP CHANGE
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#endregion CALLING ON STEP CHANGE
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //#region CALLING ON TRANSGRESSION
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //#endregion CALLING ON TRANSGRESSION
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#region CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON TRANSGRESSION
 
-    //#endregion CALLING ON PERIOD CHANGE
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON TRANSGRESSION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON PERIOD CHANGE
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON PERIOD CHANGE
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON ALERT ACTIVATION
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON ALERT DEACTIVATION
 
-    //#endregion CALLING ON WARNING ACTIVATION
-    //#region CALLING ON WARNING DEACTIVATION
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //Warning limit
-    expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
+      //#region CALLING ON WARNING ACTIVATION
 
-    //predicted active power
-    expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
-    //#region SETTING INITIAL PARAMETERS
+      expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 3500 / 4;
-    initialPeriodEndPredictedPower = 3500;
-    initialPeriodCounterValues = {
-      1570871700000: 0
-    };
-    initialPeriodPowerValues = {};
-    initialPeriodPredictedCounterValues = {
-      1570871700000: 0,
-      1570871760000: 8.2,
-      1570871820000: 16.4,
-      1570871880000: 24.6,
-      1570871940000: 32.8,
-      1570872000000: 41,
-      1570872060000: 49.2,
-      1570872120000: 57.4,
-      1570872180000: 65.6,
-      1570872240000: 73.8,
-      1570872300000: 82,
-      1570872360000: 90.2,
-      1570872420000: 98.4,
-      1570872480000: 106.6,
-      1570872540000: 114.8,
-      1570872600000: 123
-    };
-    initialLastPeriodAveragePower = 3500;
-    initialStepBeginDate = new Date("2019-10-12T09:15:00.000Z");
-    initialStepBeginEnergy = 0;
-    initialStepEndDate = new Date("2019-10-12T09:16:00.000Z");
-    initialLastStepAveragePower = 3500;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      //Warning limit
+      expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
+
+      //predicted active power
+      expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
+
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:30:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 3500 / 4;
+      initialPeriodEndPredictedPower = 3500;
+      initialPeriodCounterValues = {
         1570871700000: 0
-      }
-    };
-
-    //#endregion SETTING INITIAL PARAMETERS
-
-    //#region SETTING ACTUAL DATE AND DATA
-
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
-
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      };
+      initialPeriodPowerValues = {};
+      initialPeriodPredictedCounterValues = {
         1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+        1570871760000: 8.2,
+        1570871820000: 16.4,
+        1570871880000: 24.6,
+        1570871940000: 32.8,
+        1570872000000: 41,
+        1570872060000: 49.2,
+        1570872120000: 57.4,
+        1570872180000: 65.6,
+        1570872240000: 73.8,
+        1570872300000: 82,
+        1570872360000: 90.2,
+        1570872420000: 98.4,
+        1570872480000: 106.6,
+        1570872540000: 114.8,
+        1570872600000: 123
+      };
+      initialLastPeriodAveragePower = 3500;
+      initialStepBeginDate = new Date("2019-10-12T09:15:00.000Z");
+      initialStepBeginEnergy = 0;
+      initialStepEndDate = new Date("2019-10-12T09:16:00.000Z");
+      initialLastStepAveragePower = 3500;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING FILE DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 3400,
-      alertLimitEnergy: 3400 / 4,
-      lossesPower: 60
-    };
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    //#endregion SETTING FILE DATA
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
 
-    await exec();
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region CHECKING PAYLOAD
+      //#region SETTING FILE DATA
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 3500,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 3400,
-      alertLimitEnergy: 3400 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 3400,
+        alertLimitEnergy: 3400 / 4,
+        lossesPower: 60
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      //#endregion SETTING FILE DATA
 
-    //#endregion CHECKING PAYLOAD
+      await exec();
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CHECKING PAYLOAD
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 3500,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 3400,
+        alertLimitEnergy: 3400 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#region CALLING ON STEP CHANGE
+      //#endregion CHECKING PAYLOAD
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //#region CALLING ON STEP CHANGE
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //#endregion CALLING ON STEP CHANGE
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //#region CALLING ON TRANSGRESSION
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //#endregion CALLING ON TRANSGRESSION
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#region CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON TRANSGRESSION
 
-    //#endregion CALLING ON PERIOD CHANGE
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON TRANSGRESSION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON PERIOD CHANGE
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      expect(onPeriodChangeMockFunc).not.toHaveBeenCalled();
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON PERIOD CHANGE
 
-    expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
+      //#region CALLING ON ALERT ACTIVATION
 
-    //Warning limit
-    expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //predicted active power
-    expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      //Warning limit
+      expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //predicted active power
+      expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      //#region CALLING ON WARNING ACTIVATION
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-  //#endregion DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD VALID, DATA SKIPS ONE STEP
+      //#endregion CALLING ON WARNING ACTIVATION
 
-  //#region DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD INVALID - DATA FROM PREVIOUS PERIOD
+      //#region CALLING ON WARNING DEACTIVATION
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is below transgression limit is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 4660 / 4;
-    initialPeriodEndPredictedPower = 4660;
-    initialPeriodCounterValues = {
-      1570870800000: 0,
-      1570870860000: 101,
-      1570870920000: 152,
-      1570870980000: 203,
-      1570871040000: 354,
-      1570871100000: 405,
-      1570871160000: 506,
-      1570871220000: 607,
-      1570871280000: 708,
-      1570871340000: 859,
-      1570871400000: 910
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 6060,
-      1570870920000: 3060,
-      1570870980000: 3060,
-      1570871040000: 9060,
-      1570871100000: 3060,
-      1570871160000: 6060,
-      1570871220000: 6060,
-      1570871280000: 6060,
-      1570871340000: 9060,
-      1570871400000: 3060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570871400000: 910,
-      1570871460000: 961,
-      1570871520000: 1012,
-      1570871580000: 1063,
-      1570871640000: 1114,
-      1570871700000: 1165
-    };
-    initialLastPeriodAveragePower = 492;
-    initialStepBeginDate = new Date(1570871400000);
-    initialStepBeginEnergy = 910;
-    initialStepEndDate = new Date(1570871460000);
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    //#endregion DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD VALID, DATA SKIPS ONE STEP
+
+    //#region DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD INVALID - DATA FROM PREVIOUS PERIOD
+
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is below transgression limit is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
+
+      initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 4660 / 4;
+      initialPeriodEndPredictedPower = 4660;
+      initialPeriodCounterValues = {
         1570870800000: 0,
-        1570870860000: 100,
-        1570870920000: 150,
-        1570870980000: 200,
-        1570871040000: 350,
-        1570871100000: 400,
-        1570871160000: 500,
-        1570871220000: 600,
-        1570871280000: 700,
-        1570871340000: 850,
-        1570871400000: 900
-      }
-    };
+        1570870860000: 101,
+        1570870920000: 152,
+        1570870980000: 203,
+        1570871040000: 354,
+        1570871100000: 405,
+        1570871160000: 506,
+        1570871220000: 607,
+        1570871280000: 708,
+        1570871340000: 859,
+        1570871400000: 910
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 6060,
+        1570870920000: 3060,
+        1570870980000: 3060,
+        1570871040000: 9060,
+        1570871100000: 3060,
+        1570871160000: 6060,
+        1570871220000: 6060,
+        1570871280000: 6060,
+        1570871340000: 9060,
+        1570871400000: 3060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570871400000: 910,
+        1570871460000: 961,
+        1570871520000: 1012,
+        1570871580000: 1063,
+        1570871640000: 1114,
+        1570871700000: 1165
+      };
+      initialLastPeriodAveragePower = 492;
+      initialStepBeginDate = new Date(1570871400000);
+      initialStepBeginEnergy = 910;
+      initialStepEndDate = new Date(1570871460000);
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570870800000: 0,
+          1570870860000: 100,
+          1570870920000: 150,
+          1570870980000: 200,
+          1570871040000: 350,
+          1570871100000: 400,
+          1570871160000: 500,
+          1570871220000: 600,
+          1570871280000: 700,
+          1570871340000: 850,
+          1570871400000: 900
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 124250,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 124250,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 124250,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 5060,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 124250,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 5060,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
-    //closed period begin date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-    //closed period end date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-    //closed period average power
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      //closed period begin date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+      //closed period end date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+      //closed period average power
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is above transgression limit is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is above transgression limit is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 4660 / 4;
-    initialPeriodEndPredictedPower = 4660;
-    initialPeriodCounterValues = {
-      1570870800000: 0,
-      1570870860000: 101,
-      1570870920000: 152,
-      1570870980000: 203,
-      1570871040000: 354,
-      1570871100000: 405,
-      1570871160000: 506,
-      1570871220000: 607,
-      1570871280000: 708,
-      1570871340000: 859,
-      1570871400000: 910
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 6060,
-      1570870920000: 3060,
-      1570870980000: 3060,
-      1570871040000: 9060,
-      1570871100000: 3060,
-      1570871160000: 6060,
-      1570871220000: 6060,
-      1570871280000: 6060,
-      1570871340000: 9060,
-      1570871400000: 3060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570871400000: 910,
-      1570871460000: 961,
-      1570871520000: 1012,
-      1570871580000: 1063,
-      1570871640000: 1114,
-      1570871700000: 1165
-    };
-    initialLastPeriodAveragePower = 492;
-    initialStepBeginDate = new Date(1570871400000);
-    initialStepBeginEnergy = 910;
-    initialStepEndDate = new Date(1570871460000);
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 4660 / 4;
+      initialPeriodEndPredictedPower = 4660;
+      initialPeriodCounterValues = {
         1570870800000: 0,
-        1570870860000: 100,
-        1570870920000: 150,
-        1570870980000: 200,
-        1570871040000: 350,
-        1570871100000: 400,
-        1570871160000: 500,
-        1570871220000: 600,
-        1570871280000: 700,
-        1570871340000: 850,
-        1570871400000: 900
-      }
-    };
+        1570870860000: 101,
+        1570870920000: 152,
+        1570870980000: 203,
+        1570871040000: 354,
+        1570871100000: 405,
+        1570871160000: 506,
+        1570871220000: 607,
+        1570871280000: 708,
+        1570871340000: 859,
+        1570871400000: 910
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 6060,
+        1570870920000: 3060,
+        1570870980000: 3060,
+        1570871040000: 9060,
+        1570871100000: 3060,
+        1570871160000: 6060,
+        1570871220000: 6060,
+        1570871280000: 6060,
+        1570871340000: 9060,
+        1570871400000: 3060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570871400000: 910,
+        1570871460000: 961,
+        1570871520000: 1012,
+        1570871580000: 1063,
+        1570871640000: 1114,
+        1570871700000: 1165
+      };
+      initialLastPeriodAveragePower = 492;
+      initialStepBeginDate = new Date(1570871400000);
+      initialStepBeginEnergy = 910;
+      initialStepEndDate = new Date(1570871460000);
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570870800000: 0,
+          1570870860000: 100,
+          1570870920000: 150,
+          1570870980000: 200,
+          1570871040000: 350,
+          1570871100000: 400,
+          1570871160000: 500,
+          1570871220000: 600,
+          1570871280000: 700,
+          1570871340000: 850,
+          1570871400000: 900
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 124250,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 124250,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 4750,
-      warningLimitEnergy: 4750 / 4,
-      alertLimitPower: 4800,
-      alertLimitEnergy: 4800 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 4750,
+        warningLimitEnergy: 4750 / 4,
+        alertLimitPower: 4800,
+        alertLimitEnergy: 4800 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 124250,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 5060,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 4750,
-      warningLimitEnergy: 4750 / 4,
-      alertLimitPower: 4800,
-      alertLimitEnergy: 4800 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 124250,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 5060,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 4750,
+        warningLimitEnergy: 4750 / 4,
+        alertLimitPower: 4800,
+        alertLimitEnergy: 4800 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
-    //closed period begin date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-    //closed period end date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-    //closed period average power
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      //closed period begin date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+      //closed period end date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+      //closed period average power
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).toHaveBeenCalledTimes(1);
+      expect(onTransgressionMockFunc).toHaveBeenCalledTimes(1);
 
-    //Time on the begining of period
-    expect(onTransgressionMockFunc.mock.calls[0][0]).toEqual(
-      initialPeriodBeginDate
-    );
+      //Time on the begining of period
+      expect(onTransgressionMockFunc.mock.calls[0][0]).toEqual(
+        initialPeriodBeginDate
+      );
 
-    //Time on the end of period
-    expect(onTransgressionMockFunc.mock.calls[0][1]).toEqual(
-      initialPeriodEndDate
-    );
+      //Time on the end of period
+      expect(onTransgressionMockFunc.mock.calls[0][1]).toEqual(
+        initialPeriodEndDate
+      );
 
-    //Alert limit
-    expect(onTransgressionMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
+      //Alert limit
+      expect(onTransgressionMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
 
-    //Value of predicted active power
-    expect(onTransgressionMockFunc.mock.calls[0][3]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
+      //Value of predicted active power
+      expect(onTransgressionMockFunc.mock.calls[0][3]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is below transgression limit is valid and lastPeriod was valid - power above warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is below transgression limit is valid and lastPeriod was valid - power above warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 4660 / 4;
-    initialPeriodEndPredictedPower = 4660;
-    initialPeriodCounterValues = {
-      1570870800000: 0,
-      1570870860000: 101,
-      1570870920000: 152,
-      1570870980000: 203,
-      1570871040000: 354,
-      1570871100000: 405,
-      1570871160000: 506,
-      1570871220000: 607,
-      1570871280000: 708,
-      1570871340000: 859,
-      1570871400000: 910
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 6060,
-      1570870920000: 3060,
-      1570870980000: 3060,
-      1570871040000: 9060,
-      1570871100000: 3060,
-      1570871160000: 6060,
-      1570871220000: 6060,
-      1570871280000: 6060,
-      1570871340000: 9060,
-      1570871400000: 3060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570871400000: 910,
-      1570871460000: 961,
-      1570871520000: 1012,
-      1570871580000: 1063,
-      1570871640000: 1114,
-      1570871700000: 1165
-    };
-    initialLastPeriodAveragePower = 492;
-    initialStepBeginDate = new Date(1570871400000);
-    initialStepBeginEnergy = 910;
-    initialStepEndDate = new Date(1570871460000);
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 4660 / 4;
+      initialPeriodEndPredictedPower = 4660;
+      initialPeriodCounterValues = {
         1570870800000: 0,
-        1570870860000: 100,
-        1570870920000: 150,
-        1570870980000: 200,
-        1570871040000: 350,
-        1570871100000: 400,
-        1570871160000: 500,
-        1570871220000: 600,
-        1570871280000: 700,
-        1570871340000: 850,
-        1570871400000: 900
-      }
-    };
+        1570870860000: 101,
+        1570870920000: 152,
+        1570870980000: 203,
+        1570871040000: 354,
+        1570871100000: 405,
+        1570871160000: 506,
+        1570871220000: 607,
+        1570871280000: 708,
+        1570871340000: 859,
+        1570871400000: 910
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 6060,
+        1570870920000: 3060,
+        1570870980000: 3060,
+        1570871040000: 9060,
+        1570871100000: 3060,
+        1570871160000: 6060,
+        1570871220000: 6060,
+        1570871280000: 6060,
+        1570871340000: 9060,
+        1570871400000: 3060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570871400000: 910,
+        1570871460000: 961,
+        1570871520000: 1012,
+        1570871580000: 1063,
+        1570871640000: 1114,
+        1570871700000: 1165
+      };
+      initialLastPeriodAveragePower = 492;
+      initialStepBeginDate = new Date(1570871400000);
+      initialStepBeginEnergy = 910;
+      initialStepEndDate = new Date(1570871460000);
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570870800000: 0,
+          1570870860000: 100,
+          1570870920000: 150,
+          1570870980000: 200,
+          1570871040000: 350,
+          1570871100000: 400,
+          1570871160000: 500,
+          1570871220000: 600,
+          1570871280000: 700,
+          1570871340000: 850,
+          1570871400000: 900
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 124250,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 50,
-        1570871820000: 150
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 124250,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 50,
+          1570871820000: 150
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 5100,
-      warningLimitEnergy: 5100 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 5100,
+        warningLimitEnergy: 5100 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 124250,
-      currentPeriodEndPredictedEnergy: 5860 / 4,
-      currentPeriodEndPredictedPower: 5860,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 51,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 3060,
-        1570871820000: 6060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 253,
-        1570871940000: 354,
-        1570872000000: 455,
-        1570872060000: 556,
-        1570872120000: 657,
-        1570872180000: 758,
-        1570872240000: 859,
-        1570872300000: 960,
-        1570872360000: 1061,
-        1570872420000: 1162,
-        1570872480000: 1263,
-        1570872540000: 1364,
-        1570872600000: 1465
-      },
-      lastPeriodAveragePower: 5060,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 6060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 5100,
-      warningLimitEnergy: 5100 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 124250,
+        currentPeriodEndPredictedEnergy: 5860 / 4,
+        currentPeriodEndPredictedPower: 5860,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 51,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 3060,
+          1570871820000: 6060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 253,
+          1570871940000: 354,
+          1570872000000: 455,
+          1570872060000: 556,
+          1570872120000: 657,
+          1570872180000: 758,
+          1570872240000: 859,
+          1570872300000: 960,
+          1570872360000: 1061,
+          1570872420000: 1162,
+          1570872480000: 1263,
+          1570872540000: 1364,
+          1570872600000: 1465
+        },
+        lastPeriodAveragePower: 5060,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 6060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 5100,
+        warningLimitEnergy: 5100 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
-    //closed period begin date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-    //closed period end date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-    //closed period average power
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      //closed period begin date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+      //closed period end date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+      //closed period average power
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).toHaveBeenCalledTimes(1);
+      expect(onWarningActivationMockFunc).toHaveBeenCalledTimes(1);
 
-    //Warning limit
-    expect(onWarningActivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
+      //Warning limit
+      expect(onWarningActivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
 
-    //predicted active power
-    expect(onWarningActivationMockFunc.mock.calls[0][1]).toEqual(5860);
+      //predicted active power
+      expect(onWarningActivationMockFunc.mock.calls[0][1]).toEqual(5860);
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is below transgression limit is valid and lastPeriod was valid - power below warning limit - prevously below, power above alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is below transgression limit is valid and lastPeriod was valid - power below warning limit - prevously below, power above alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 4660 / 4;
-    initialPeriodEndPredictedPower = 4660;
-    initialPeriodCounterValues = {
-      1570870800000: 0,
-      1570870860000: 101,
-      1570870920000: 152,
-      1570870980000: 203,
-      1570871040000: 354,
-      1570871100000: 405,
-      1570871160000: 506,
-      1570871220000: 607,
-      1570871280000: 708,
-      1570871340000: 859,
-      1570871400000: 910
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 6060,
-      1570870920000: 3060,
-      1570870980000: 3060,
-      1570871040000: 9060,
-      1570871100000: 3060,
-      1570871160000: 6060,
-      1570871220000: 6060,
-      1570871280000: 6060,
-      1570871340000: 9060,
-      1570871400000: 3060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570871400000: 910,
-      1570871460000: 961,
-      1570871520000: 1012,
-      1570871580000: 1063,
-      1570871640000: 1114,
-      1570871700000: 1165
-    };
-    initialLastPeriodAveragePower = 492;
-    initialStepBeginDate = new Date(1570871400000);
-    initialStepBeginEnergy = 910;
-    initialStepEndDate = new Date(1570871460000);
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 4660 / 4;
+      initialPeriodEndPredictedPower = 4660;
+      initialPeriodCounterValues = {
         1570870800000: 0,
-        1570870860000: 100,
-        1570870920000: 150,
-        1570870980000: 200,
-        1570871040000: 350,
-        1570871100000: 400,
-        1570871160000: 500,
-        1570871220000: 600,
-        1570871280000: 700,
-        1570871340000: 850,
-        1570871400000: 900
-      }
-    };
+        1570870860000: 101,
+        1570870920000: 152,
+        1570870980000: 203,
+        1570871040000: 354,
+        1570871100000: 405,
+        1570871160000: 506,
+        1570871220000: 607,
+        1570871280000: 708,
+        1570871340000: 859,
+        1570871400000: 910
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 6060,
+        1570870920000: 3060,
+        1570870980000: 3060,
+        1570871040000: 9060,
+        1570871100000: 3060,
+        1570871160000: 6060,
+        1570871220000: 6060,
+        1570871280000: 6060,
+        1570871340000: 9060,
+        1570871400000: 3060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570871400000: 910,
+        1570871460000: 961,
+        1570871520000: 1012,
+        1570871580000: 1063,
+        1570871640000: 1114,
+        1570871700000: 1165
+      };
+      initialLastPeriodAveragePower = 492;
+      initialStepBeginDate = new Date(1570871400000);
+      initialStepBeginEnergy = 910;
+      initialStepEndDate = new Date(1570871460000);
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570870800000: 0,
+          1570870860000: 100,
+          1570870920000: 150,
+          1570870980000: 200,
+          1570871040000: 350,
+          1570871100000: 400,
+          1570871160000: 500,
+          1570871220000: 600,
+          1570871280000: 700,
+          1570871340000: 850,
+          1570871400000: 900
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 124250,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 50,
-        1570871820000: 150
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 124250,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 50,
+          1570871820000: 150
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 5100,
-      alertLimitEnergy: 5100 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 5100,
+        alertLimitEnergy: 5100 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 124250,
-      currentPeriodEndPredictedEnergy: 5860 / 4,
-      currentPeriodEndPredictedPower: 5860,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 51,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 3060,
-        1570871820000: 6060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 253,
-        1570871940000: 354,
-        1570872000000: 455,
-        1570872060000: 556,
-        1570872120000: 657,
-        1570872180000: 758,
-        1570872240000: 859,
-        1570872300000: 960,
-        1570872360000: 1061,
-        1570872420000: 1162,
-        1570872480000: 1263,
-        1570872540000: 1364,
-        1570872600000: 1465
-      },
-      lastPeriodAveragePower: 5060,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 6060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 5100,
-      alertLimitEnergy: 5100 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 124250,
+        currentPeriodEndPredictedEnergy: 5860 / 4,
+        currentPeriodEndPredictedPower: 5860,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 51,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 3060,
+          1570871820000: 6060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 253,
+          1570871940000: 354,
+          1570872000000: 455,
+          1570872060000: 556,
+          1570872120000: 657,
+          1570872180000: 758,
+          1570872240000: 859,
+          1570872300000: 960,
+          1570872360000: 1061,
+          1570872420000: 1162,
+          1570872480000: 1263,
+          1570872540000: 1364,
+          1570872600000: 1465
+        },
+        lastPeriodAveragePower: 5060,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 6060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 5100,
+        alertLimitEnergy: 5100 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
-    //closed period begin date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-    //closed period end date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-    //closed period average power
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      //closed period begin date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+      //closed period end date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+      //closed period average power
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).toHaveBeenCalledTimes(1);
+      expect(onAlertActivationMockFunc).toHaveBeenCalledTimes(1);
 
-    //Warning limit
-    expect(onAlertActivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
+      //Warning limit
+      expect(onAlertActivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
 
-    //predicted active power
-    expect(onAlertActivationMockFunc.mock.calls[0][1]).toEqual(5860);
+      //predicted active power
+      expect(onAlertActivationMockFunc.mock.calls[0][1]).toEqual(5860);
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is below transgression limit is valid and lastPeriod was valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is below transgression limit is valid and lastPeriod was valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 4660 / 4;
-    initialPeriodEndPredictedPower = 4660;
-    initialPeriodCounterValues = {
-      1570870800000: 0,
-      1570870860000: 101,
-      1570870920000: 152,
-      1570870980000: 203,
-      1570871040000: 354,
-      1570871100000: 405,
-      1570871160000: 506,
-      1570871220000: 607,
-      1570871280000: 708,
-      1570871340000: 859,
-      1570871400000: 910
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 6060,
-      1570870920000: 3060,
-      1570870980000: 3060,
-      1570871040000: 9060,
-      1570871100000: 3060,
-      1570871160000: 6060,
-      1570871220000: 6060,
-      1570871280000: 6060,
-      1570871340000: 9060,
-      1570871400000: 3060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570871400000: 910,
-      1570871460000: 961,
-      1570871520000: 1012,
-      1570871580000: 1063,
-      1570871640000: 1114,
-      1570871700000: 1165
-    };
-    initialLastPeriodAveragePower = 492;
-    initialStepBeginDate = new Date(1570871400000);
-    initialStepBeginEnergy = 910;
-    initialStepEndDate = new Date(1570871460000);
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 4660 / 4;
+      initialPeriodEndPredictedPower = 4660;
+      initialPeriodCounterValues = {
         1570870800000: 0,
-        1570870860000: 100,
-        1570870920000: 150,
-        1570870980000: 200,
-        1570871040000: 350,
-        1570871100000: 400,
-        1570871160000: 500,
-        1570871220000: 600,
-        1570871280000: 700,
-        1570871340000: 850,
-        1570871400000: 900
-      }
-    };
+        1570870860000: 101,
+        1570870920000: 152,
+        1570870980000: 203,
+        1570871040000: 354,
+        1570871100000: 405,
+        1570871160000: 506,
+        1570871220000: 607,
+        1570871280000: 708,
+        1570871340000: 859,
+        1570871400000: 910
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 6060,
+        1570870920000: 3060,
+        1570870980000: 3060,
+        1570871040000: 9060,
+        1570871100000: 3060,
+        1570871160000: 6060,
+        1570871220000: 6060,
+        1570871280000: 6060,
+        1570871340000: 9060,
+        1570871400000: 3060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570871400000: 910,
+        1570871460000: 961,
+        1570871520000: 1012,
+        1570871580000: 1063,
+        1570871640000: 1114,
+        1570871700000: 1165
+      };
+      initialLastPeriodAveragePower = 492;
+      initialStepBeginDate = new Date(1570871400000);
+      initialStepBeginEnergy = 910;
+      initialStepEndDate = new Date(1570871460000);
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570870800000: 0,
+          1570870860000: 100,
+          1570870920000: 150,
+          1570870980000: 200,
+          1570871040000: 350,
+          1570871100000: 400,
+          1570871160000: 500,
+          1570871220000: 600,
+          1570871280000: 700,
+          1570871340000: 850,
+          1570871400000: 900
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 124250,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 124250,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      warningLimitPower: 4500,
-      warningLimitEnergy: 4500 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        warningLimitPower: 4500,
+        warningLimitEnergy: 4500 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 124250,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 5060,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 4500,
-      warningLimitEnergy: 4500 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 124250,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 5060,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 4500,
+        warningLimitEnergy: 4500 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
-    //closed period begin date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-    //closed period end date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-    //closed period average power
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      //closed period begin date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+      //closed period end date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+      //closed period average power
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
-    //#region CALLING ON WARNING DEACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
+      expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
 
-    //Warning limit
-    expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
+      //Warning limit
+      expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
 
-    //predicted active power
-    expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //predicted active power
+      expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is below transgression limit is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and power of period is below transgression limit is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 4660 / 4;
-    initialPeriodEndPredictedPower = 4660;
-    initialPeriodCounterValues = {
-      1570870800000: 0,
-      1570870860000: 101,
-      1570870920000: 152,
-      1570870980000: 203,
-      1570871040000: 354,
-      1570871100000: 405,
-      1570871160000: 506,
-      1570871220000: 607,
-      1570871280000: 708,
-      1570871340000: 859,
-      1570871400000: 910
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 6060,
-      1570870920000: 3060,
-      1570870980000: 3060,
-      1570871040000: 9060,
-      1570871100000: 3060,
-      1570871160000: 6060,
-      1570871220000: 6060,
-      1570871280000: 6060,
-      1570871340000: 9060,
-      1570871400000: 3060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570871400000: 910,
-      1570871460000: 961,
-      1570871520000: 1012,
-      1570871580000: 1063,
-      1570871640000: 1114,
-      1570871700000: 1165
-    };
-    initialLastPeriodAveragePower = 492;
-    initialStepBeginDate = new Date(1570871400000);
-    initialStepBeginEnergy = 910;
-    initialStepEndDate = new Date(1570871460000);
-    initialLastStepAveragePower = 3060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:15:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 4660 / 4;
+      initialPeriodEndPredictedPower = 4660;
+      initialPeriodCounterValues = {
         1570870800000: 0,
-        1570870860000: 100,
-        1570870920000: 150,
-        1570870980000: 200,
-        1570871040000: 350,
-        1570871100000: 400,
-        1570871160000: 500,
-        1570871220000: 600,
-        1570871280000: 700,
-        1570871340000: 850,
-        1570871400000: 900
-      }
-    };
+        1570870860000: 101,
+        1570870920000: 152,
+        1570870980000: 203,
+        1570871040000: 354,
+        1570871100000: 405,
+        1570871160000: 506,
+        1570871220000: 607,
+        1570871280000: 708,
+        1570871340000: 859,
+        1570871400000: 910
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 6060,
+        1570870920000: 3060,
+        1570870980000: 3060,
+        1570871040000: 9060,
+        1570871100000: 3060,
+        1570871160000: 6060,
+        1570871220000: 6060,
+        1570871280000: 6060,
+        1570871340000: 9060,
+        1570871400000: 3060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570871400000: 910,
+        1570871460000: 961,
+        1570871520000: 1012,
+        1570871580000: 1063,
+        1570871640000: 1114,
+        1570871700000: 1165
+      };
+      initialLastPeriodAveragePower = 492;
+      initialStepBeginDate = new Date(1570871400000);
+      initialStepBeginEnergy = 910;
+      initialStepEndDate = new Date(1570871460000);
+      initialLastStepAveragePower = 3060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570870800000: 0,
+          1570870860000: 100,
+          1570870920000: 150,
+          1570870980000: 200,
+          1570871040000: 350,
+          1570871100000: 400,
+          1570871160000: 500,
+          1570871220000: 600,
+          1570871280000: 700,
+          1570871340000: 850,
+          1570871400000: 900
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 124250,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 124250,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 4500,
-      alertLimitEnergy: 4500 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 4500,
+        alertLimitEnergy: 4500 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 124250,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 5060,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 4500,
-      alertLimitEnergy: 4500 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 124250,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 5060,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 4500,
+        alertLimitEnergy: 4500 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
-    //closed period begin date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
-    //closed period end date
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
-    //closed period average power
-    expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      expect(onValidPeriodCloseMockFunc).toHaveBeenCalledTimes(1);
+      //closed period begin date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
+      //closed period end date
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
+      //closed period average power
+      expect(onValidPeriodCloseMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).toHaveBeenCalledTimes(1);
+      expect(onTransgressionMockFunc).toHaveBeenCalledTimes(1);
 
-    //Time on the begining of period
-    expect(onTransgressionMockFunc.mock.calls[0][0]).toEqual(
-      initialPeriodBeginDate
-    );
+      //Time on the begining of period
+      expect(onTransgressionMockFunc.mock.calls[0][0]).toEqual(
+        initialPeriodBeginDate
+      );
 
-    //Time on the end of period
-    expect(onTransgressionMockFunc.mock.calls[0][1]).toEqual(
-      initialPeriodEndDate
-    );
+      //Time on the end of period
+      expect(onTransgressionMockFunc.mock.calls[0][1]).toEqual(
+        initialPeriodEndDate
+      );
 
-    //Alert limit
-    expect(onTransgressionMockFunc.mock.calls[0][2]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
+      //Alert limit
+      expect(onTransgressionMockFunc.mock.calls[0][2]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
 
-    //Value of predicted active power
-    expect(onTransgressionMockFunc.mock.calls[0][3]).toEqual(
-      loadmonitoringFileContent.lossesPower +
-        (newLoadmonitoringData.initialCounterValue - initialPeriodBeginEnergy) *
-          4
-    );
+      //Value of predicted active power
+      expect(onTransgressionMockFunc.mock.calls[0][3]).toEqual(
+        loadmonitoringFileContent.lossesPower +
+          (newLoadmonitoringData.initialCounterValue -
+            initialPeriodBeginEnergy) *
+            4
+      );
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(true);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
+      expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
 
-    //Warning limit
-    expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
+      //Warning limit
+      expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
 
-    //predicted active power
-    expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      //predicted active power
+      expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  //#endregion DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD INVALID - DATA FROM PREVIOUS PERIOD
+    //#endregion DATA ASSOCIATED WITH 3rd STEP, LAST PERIOD INVALID - DATA FROM PREVIOUS PERIOD
 
-  //#region DATA ASSOCIATED WITH 3rd STEP SKIP ONE PERIOD
+    //#region DATA ASSOCIATED WITH 3rd STEP SKIP ONE PERIOD
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 5460 / 4;
-    initialPeriodEndPredictedPower = 5460;
-    initialPeriodCounterValues = {
-      1570869900000: 0,
-      1570869960000: 51,
-      1570870020000: 152,
-      1570870080000: 203,
-      1570870140000: 254,
-      1570870200000: 355,
-      1570870260000: 456,
-      1570870320000: 557
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 3060,
-      1570870920000: 6060,
-      1570870980000: 3060,
-      1570871040000: 3060,
-      1570871100000: 6060,
-      1570871160000: 6060,
-      1570871220000: 6060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570870320000: 557,
-      1570870380000: 658,
-      1570870440000: 759,
-      1570870500000: 860,
-      1570870560000: 961,
-      1570870620000: 1062,
-      1570870680000: 1163,
-      1570870740000: 1264,
-      1570870800000: 1365
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
-    initialStepBeginEnergy = 557;
-    initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
-    initialLastStepAveragePower = 6060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 5460 / 4;
+      initialPeriodEndPredictedPower = 5460;
+      initialPeriodCounterValues = {
         1570869900000: 0,
-        1570869960000: 50,
-        1570870020000: 150,
-        1570870080000: 200,
-        1570870140000: 250,
-        1570870200000: 350,
-        1570870260000: 450,
-        1570870320000: 550
-      }
-    };
+        1570869960000: 51,
+        1570870020000: 152,
+        1570870080000: 203,
+        1570870140000: 254,
+        1570870200000: 355,
+        1570870260000: 456,
+        1570870320000: 557
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 3060,
+        1570870920000: 6060,
+        1570870980000: 3060,
+        1570871040000: 3060,
+        1570871100000: 6060,
+        1570871160000: 6060,
+        1570871220000: 6060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570870320000: 557,
+        1570870380000: 658,
+        1570870440000: 759,
+        1570870500000: 860,
+        1570870560000: 961,
+        1570870620000: 1062,
+        1570870680000: 1163,
+        1570870740000: 1264,
+        1570870800000: 1365
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
+      initialStepBeginEnergy = 557;
+      initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
+      initialLastStepAveragePower = 6060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570869900000: 0,
+          1570869960000: 50,
+          1570870020000: 150,
+          1570870080000: 200,
+          1570870140000: 250,
+          1570870200000: 350,
+          1570870260000: 450,
+          1570870320000: 550
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 124250,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 50,
-        1570871820000: 150
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 124250,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 50,
+          1570871820000: 150
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 124250,
-      currentPeriodEndPredictedEnergy: 5860 / 4,
-      currentPeriodEndPredictedPower: 5860,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 51,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 3060,
-        1570871820000: 6060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 253,
-        1570871940000: 354,
-        1570872000000: 455,
-        1570872060000: 556,
-        1570872120000: 657,
-        1570872180000: 758,
-        1570872240000: 859,
-        1570872300000: 960,
-        1570872360000: 1061,
-        1570872420000: 1162,
-        1570872480000: 1263,
-        1570872540000: 1364,
-        1570872600000: 1465
-      },
-      lastPeriodAveragePower: 0,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 6060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 124250,
+        currentPeriodEndPredictedEnergy: 5860 / 4,
+        currentPeriodEndPredictedPower: 5860,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 51,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 3060,
+          1570871820000: 6060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 253,
+          1570871940000: 354,
+          1570872000000: 455,
+          1570872060000: 556,
+          1570872120000: 657,
+          1570872180000: 758,
+          1570872240000: 859,
+          1570872300000: 960,
+          1570872360000: 1061,
+          1570872420000: 1162,
+          1570872480000: 1263,
+          1570872540000: 1364,
+          1570872600000: 1465
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 6060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power above warning limit - prevously below, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power above warning limit - prevously below, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 5460 / 4;
-    initialPeriodEndPredictedPower = 5460;
-    initialPeriodCounterValues = {
-      1570869900000: 0,
-      1570869960000: 51,
-      1570870020000: 152,
-      1570870080000: 203,
-      1570870140000: 254,
-      1570870200000: 355,
-      1570870260000: 456,
-      1570870320000: 557
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 3060,
-      1570870920000: 6060,
-      1570870980000: 3060,
-      1570871040000: 3060,
-      1570871100000: 6060,
-      1570871160000: 6060,
-      1570871220000: 6060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570870320000: 557,
-      1570870380000: 658,
-      1570870440000: 759,
-      1570870500000: 860,
-      1570870560000: 961,
-      1570870620000: 1062,
-      1570870680000: 1163,
-      1570870740000: 1264,
-      1570870800000: 1365
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
-    initialStepBeginEnergy = 557;
-    initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
-    initialLastStepAveragePower = 6060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 5460 / 4;
+      initialPeriodEndPredictedPower = 5460;
+      initialPeriodCounterValues = {
         1570869900000: 0,
-        1570869960000: 50,
-        1570870020000: 150,
-        1570870080000: 200,
-        1570870140000: 250,
-        1570870200000: 350,
-        1570870260000: 450,
-        1570870320000: 550
-      }
-    };
+        1570869960000: 51,
+        1570870020000: 152,
+        1570870080000: 203,
+        1570870140000: 254,
+        1570870200000: 355,
+        1570870260000: 456,
+        1570870320000: 557
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 3060,
+        1570870920000: 6060,
+        1570870980000: 3060,
+        1570871040000: 3060,
+        1570871100000: 6060,
+        1570871160000: 6060,
+        1570871220000: 6060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570870320000: 557,
+        1570870380000: 658,
+        1570870440000: 759,
+        1570870500000: 860,
+        1570870560000: 961,
+        1570870620000: 1062,
+        1570870680000: 1163,
+        1570870740000: 1264,
+        1570870800000: 1365
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
+      initialStepBeginEnergy = 557;
+      initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
+      initialLastStepAveragePower = 6060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570869900000: 0,
+          1570869960000: 50,
+          1570870020000: 150,
+          1570870080000: 200,
+          1570870140000: 250,
+          1570870200000: 350,
+          1570870260000: 450,
+          1570870320000: 550
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 124250,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 50,
-        1570871820000: 150
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 124250,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 50,
+          1570871820000: 150
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 5700,
-      warningLimitEnergy: 5700 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 5700,
+        warningLimitEnergy: 5700 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 124250,
-      currentPeriodEndPredictedEnergy: 5860 / 4,
-      currentPeriodEndPredictedPower: 5860,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 51,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 3060,
-        1570871820000: 6060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 253,
-        1570871940000: 354,
-        1570872000000: 455,
-        1570872060000: 556,
-        1570872120000: 657,
-        1570872180000: 758,
-        1570872240000: 859,
-        1570872300000: 960,
-        1570872360000: 1061,
-        1570872420000: 1162,
-        1570872480000: 1263,
-        1570872540000: 1364,
-        1570872600000: 1465
-      },
-      lastPeriodAveragePower: 0,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 6060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 5700,
-      warningLimitEnergy: 5700 / 4,
-      alertLimitPower: 60000,
-      alertLimitEnergy: 60000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 124250,
+        currentPeriodEndPredictedEnergy: 5860 / 4,
+        currentPeriodEndPredictedPower: 5860,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 51,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 3060,
+          1570871820000: 6060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 253,
+          1570871940000: 354,
+          1570872000000: 455,
+          1570872060000: 556,
+          1570872120000: 657,
+          1570872180000: 758,
+          1570872240000: 859,
+          1570872300000: 960,
+          1570872360000: 1061,
+          1570872420000: 1162,
+          1570872480000: 1263,
+          1570872540000: 1364,
+          1570872600000: 1465
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 6060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 5700,
+        warningLimitEnergy: 5700 / 4,
+        alertLimitPower: 60000,
+        alertLimitEnergy: 60000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).toHaveBeenCalledTimes(1);
+      expect(onWarningActivationMockFunc).toHaveBeenCalledTimes(1);
 
-    //Warning limit
-    expect(onWarningActivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
+      //Warning limit
+      expect(onWarningActivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
 
-    //predicted active power
-    expect(onWarningActivationMockFunc.mock.calls[0][1]).toEqual(5860);
+      //predicted active power
+      expect(onWarningActivationMockFunc.mock.calls[0][1]).toEqual(5860);
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power above alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power above alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 5460 / 4;
-    initialPeriodEndPredictedPower = 5460;
-    initialPeriodCounterValues = {
-      1570869900000: 0,
-      1570869960000: 51,
-      1570870020000: 152,
-      1570870080000: 203,
-      1570870140000: 254,
-      1570870200000: 355,
-      1570870260000: 456,
-      1570870320000: 557
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 3060,
-      1570870920000: 6060,
-      1570870980000: 3060,
-      1570871040000: 3060,
-      1570871100000: 6060,
-      1570871160000: 6060,
-      1570871220000: 6060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570870320000: 557,
-      1570870380000: 658,
-      1570870440000: 759,
-      1570870500000: 860,
-      1570870560000: 961,
-      1570870620000: 1062,
-      1570870680000: 1163,
-      1570870740000: 1264,
-      1570870800000: 1365
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
-    initialStepBeginEnergy = 557;
-    initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
-    initialLastStepAveragePower = 6060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 5460 / 4;
+      initialPeriodEndPredictedPower = 5460;
+      initialPeriodCounterValues = {
         1570869900000: 0,
-        1570869960000: 50,
-        1570870020000: 150,
-        1570870080000: 200,
-        1570870140000: 250,
-        1570870200000: 350,
-        1570870260000: 450,
-        1570870320000: 550
-      }
-    };
+        1570869960000: 51,
+        1570870020000: 152,
+        1570870080000: 203,
+        1570870140000: 254,
+        1570870200000: 355,
+        1570870260000: 456,
+        1570870320000: 557
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 3060,
+        1570870920000: 6060,
+        1570870980000: 3060,
+        1570871040000: 3060,
+        1570871100000: 6060,
+        1570871160000: 6060,
+        1570871220000: 6060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570870320000: 557,
+        1570870380000: 658,
+        1570870440000: 759,
+        1570870500000: 860,
+        1570870560000: 961,
+        1570870620000: 1062,
+        1570870680000: 1163,
+        1570870740000: 1264,
+        1570870800000: 1365
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
+      initialStepBeginEnergy = 557;
+      initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
+      initialLastStepAveragePower = 6060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570869900000: 0,
+          1570869960000: 50,
+          1570870020000: 150,
+          1570870080000: 200,
+          1570870140000: 250,
+          1570870200000: 350,
+          1570870260000: 450,
+          1570870320000: 550
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 124250,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 50,
-        1570871820000: 150
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 124250,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 50,
+          1570871820000: 150
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 5700,
-      alertLimitEnergy: 5700 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 5700,
+        alertLimitEnergy: 5700 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 124250,
-      currentPeriodEndPredictedEnergy: 5860 / 4,
-      currentPeriodEndPredictedPower: 5860,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 51,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 3060,
-        1570871820000: 6060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 253,
-        1570871940000: 354,
-        1570872000000: 455,
-        1570872060000: 556,
-        1570872120000: 657,
-        1570872180000: 758,
-        1570872240000: 859,
-        1570872300000: 960,
-        1570872360000: 1061,
-        1570872420000: 1162,
-        1570872480000: 1263,
-        1570872540000: 1364,
-        1570872600000: 1465
-      },
-      lastPeriodAveragePower: 0,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 6060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 5700,
-      alertLimitEnergy: 5700 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 124250,
+        currentPeriodEndPredictedEnergy: 5860 / 4,
+        currentPeriodEndPredictedPower: 5860,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 51,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 3060,
+          1570871820000: 6060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 253,
+          1570871940000: 354,
+          1570872000000: 455,
+          1570872060000: 556,
+          1570872120000: 657,
+          1570872180000: 758,
+          1570872240000: 859,
+          1570872300000: 960,
+          1570872360000: 1061,
+          1570872420000: 1162,
+          1570872480000: 1263,
+          1570872540000: 1364,
+          1570872600000: 1465
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 6060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 5700,
+        alertLimitEnergy: 5700 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).toHaveBeenCalledTimes(1);
+      expect(onAlertActivationMockFunc).toHaveBeenCalledTimes(1);
 
-    //Warning limit
-    expect(onAlertActivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
+      //Warning limit
+      expect(onAlertActivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
 
-    //predicted active power
-    expect(onAlertActivationMockFunc.mock.calls[0][1]).toEqual(5860);
+      //predicted active power
+      expect(onAlertActivationMockFunc.mock.calls[0][1]).toEqual(5860);
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously above, power below alert limit - previously below", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 5460 / 4;
-    initialPeriodEndPredictedPower = 5460;
-    initialPeriodCounterValues = {
-      1570869900000: 0,
-      1570869960000: 51,
-      1570870020000: 152,
-      1570870080000: 203,
-      1570870140000: 254,
-      1570870200000: 355,
-      1570870260000: 456,
-      1570870320000: 557
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 3060,
-      1570870920000: 6060,
-      1570870980000: 3060,
-      1570871040000: 3060,
-      1570871100000: 6060,
-      1570871160000: 6060,
-      1570871220000: 6060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570870320000: 557,
-      1570870380000: 658,
-      1570870440000: 759,
-      1570870500000: 860,
-      1570870560000: 961,
-      1570870620000: 1062,
-      1570870680000: 1163,
-      1570870740000: 1264,
-      1570870800000: 1365
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
-    initialStepBeginEnergy = 557;
-    initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
-    initialLastStepAveragePower = 6060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 5460 / 4;
+      initialPeriodEndPredictedPower = 5460;
+      initialPeriodCounterValues = {
         1570869900000: 0,
-        1570869960000: 50,
-        1570870020000: 150,
-        1570870080000: 200,
-        1570870140000: 250,
-        1570870200000: 350,
-        1570870260000: 450,
-        1570870320000: 550
-      }
-    };
+        1570869960000: 51,
+        1570870020000: 152,
+        1570870080000: 203,
+        1570870140000: 254,
+        1570870200000: 355,
+        1570870260000: 456,
+        1570870320000: 557
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 3060,
+        1570870920000: 6060,
+        1570870980000: 3060,
+        1570871040000: 3060,
+        1570871100000: 6060,
+        1570871160000: 6060,
+        1570871220000: 6060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570870320000: 557,
+        1570870380000: 658,
+        1570870440000: 759,
+        1570870500000: 860,
+        1570870560000: 961,
+        1570870620000: 1062,
+        1570870680000: 1163,
+        1570870740000: 1264,
+        1570870800000: 1365
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
+      initialStepBeginEnergy = 557;
+      initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
+      initialLastStepAveragePower = 6060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570869900000: 0,
+          1570869960000: 50,
+          1570870020000: 150,
+          1570870080000: 200,
+          1570870140000: 250,
+          1570870200000: 350,
+          1570870260000: 450,
+          1570870320000: 550
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: true,
-      alert: false,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 5000,
-      alertLimitEnergy: 5000 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: true,
+        alert: false,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 5000,
+        alertLimitEnergy: 5000 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 0,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 5000,
-      alertLimitEnergy: 5000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 5000,
+        alertLimitEnergy: 5000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
-    //#region CALLING ON WARNING DEACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
+      expect(onWarningDeactivationMockFunc).toHaveBeenCalledTimes(1);
 
-    //Warning limit
-    expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.warningLimitPower
-    );
+      //Warning limit
+      expect(onWarningDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.warningLimitPower
+      );
 
-    //predicted active power
-    expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      //predicted active power
+      expect(onWarningDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
 
-    //#endregion CALLING ON WARNING DEACTIVATION
-  });
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
 
-  it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
-    //#region SETTING INITIAL PARAMETERS
+    it("should calculate new loadmonitoring data and call proper methods if data is associated with 3rd step and is valid and lastPeriod was valid - power below warning limit - prevously below, power below alert limit - previously above", async () => {
+      //#region SETTING INITIAL PARAMETERS
 
-    initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
-    initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
-    initialPeriodBeginEnergy = 123000;
-    initialPeriodEndPredictedEnergy = 5460 / 4;
-    initialPeriodEndPredictedPower = 5460;
-    initialPeriodCounterValues = {
-      1570869900000: 0,
-      1570869960000: 51,
-      1570870020000: 152,
-      1570870080000: 203,
-      1570870140000: 254,
-      1570870200000: 355,
-      1570870260000: 456,
-      1570870320000: 557
-    };
-    initialPeriodPowerValues = {
-      1570870860000: 3060,
-      1570870920000: 6060,
-      1570870980000: 3060,
-      1570871040000: 3060,
-      1570871100000: 6060,
-      1570871160000: 6060,
-      1570871220000: 6060
-    };
-    initialPeriodPredictedCounterValues = {
-      1570870320000: 557,
-      1570870380000: 658,
-      1570870440000: 759,
-      1570870500000: 860,
-      1570870560000: 961,
-      1570870620000: 1062,
-      1570870680000: 1163,
-      1570870740000: 1264,
-      1570870800000: 1365
-    };
-    initialLastPeriodAveragePower = 123;
-    initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
-    initialStepBeginEnergy = 557;
-    initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
-    initialLastStepAveragePower = 6060;
-    initialLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
+      initialPeriodBeginDate = new Date("2019-10-12T08:45:00.000Z");
+      initialPeriodEndDate = new Date("2019-10-12T09:00:00.000Z");
+      initialPeriodBeginEnergy = 123000;
+      initialPeriodEndPredictedEnergy = 5460 / 4;
+      initialPeriodEndPredictedPower = 5460;
+      initialPeriodCounterValues = {
         1570869900000: 0,
-        1570869960000: 50,
-        1570870020000: 150,
-        1570870080000: 200,
-        1570870140000: 250,
-        1570870200000: 350,
-        1570870260000: 450,
-        1570870320000: 550
-      }
-    };
+        1570869960000: 51,
+        1570870020000: 152,
+        1570870080000: 203,
+        1570870140000: 254,
+        1570870200000: 355,
+        1570870260000: 456,
+        1570870320000: 557
+      };
+      initialPeriodPowerValues = {
+        1570870860000: 3060,
+        1570870920000: 6060,
+        1570870980000: 3060,
+        1570871040000: 3060,
+        1570871100000: 6060,
+        1570871160000: 6060,
+        1570871220000: 6060
+      };
+      initialPeriodPredictedCounterValues = {
+        1570870320000: 557,
+        1570870380000: 658,
+        1570870440000: 759,
+        1570870500000: 860,
+        1570870560000: 961,
+        1570870620000: 1062,
+        1570870680000: 1163,
+        1570870740000: 1264,
+        1570870800000: 1365
+      };
+      initialLastPeriodAveragePower = 123;
+      initialStepBeginDate = new Date("2019-10-12T08:52:00.000Z");
+      initialStepBeginEnergy = 557;
+      initialStepEndDate = new Date("2019-10-12T08:53:00.000Z");
+      initialLastStepAveragePower = 6060;
+      initialLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570869900000: 0,
+          1570869960000: 50,
+          1570870020000: 150,
+          1570870080000: 200,
+          1570870140000: 250,
+          1570870200000: 350,
+          1570870260000: 450,
+          1570870320000: 550
+        }
+      };
 
-    //#endregion SETTING INITIAL PARAMETERS
+      //#endregion SETTING INITIAL PARAMETERS
 
-    //#region SETTING ACTUAL DATE AND DATA
+      //#region SETTING ACTUAL DATE AND DATA
 
-    //"2019-10-12T09:17:00.000Z" - 1570871820000
-    actualDate = new Date(1570871820000);
+      //"2019-10-12T09:17:00.000Z" - 1570871820000
+      actualDate = new Date(1570871820000);
 
-    newLoadmonitoringData = {
-      initialCounterValue: 123000,
-      counters: {
-        1570871700000: 0,
-        1570871760000: 100,
-        1570871820000: 150
-      }
-    };
+      newLoadmonitoringData = {
+        initialCounterValue: 123000,
+        counters: {
+          1570871700000: 0,
+          1570871760000: 100,
+          1570871820000: 150
+        }
+      };
 
-    //#endregion SETTING ACTUAL DATE AND DATA
+      //#endregion SETTING ACTUAL DATE AND DATA
 
-    //#region SETTING FILE DATA
+      //#region SETTING FILE DATA
 
-    loadmonitoringFileContent = {
-      enabled: true,
-      warning: false,
-      alert: true,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 5000,
-      alertLimitEnergy: 5000 / 4,
-      lossesPower: 60
-    };
+      loadmonitoringFileContent = {
+        enabled: true,
+        warning: false,
+        alert: true,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 5000,
+        alertLimitEnergy: 5000 / 4,
+        lossesPower: 60
+      };
 
-    //#endregion SETTING FILE DATA
+      //#endregion SETTING FILE DATA
 
-    await exec();
+      await exec();
 
-    //#region CHECKING PAYLOAD
+      //#region CHECKING PAYLOAD
 
-    let expectedPayload = {
-      enabled: true,
-      warning: false,
-      alert: false,
-      active: true,
-      currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
-      currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
-      currentPeriodBeginEnergy: 123000,
-      currentPeriodEndPredictedEnergy: 815,
-      currentPeriodEndPredictedPower: 3260,
-      currentPeriodCounterValues: {
-        1570871700000: 0,
-        1570871760000: 101,
-        1570871820000: 152
-      },
-      currentPeriodPowerValues: {
-        1570871760000: 6060,
-        1570871820000: 3060
-      },
-      currentPeriodPredictedCounterValues: {
-        1570871820000: 152,
-        1570871880000: 203,
-        1570871940000: 254,
-        1570872000000: 305,
-        1570872060000: 356,
-        1570872120000: 407,
-        1570872180000: 458,
-        1570872240000: 509,
-        1570872300000: 560,
-        1570872360000: 611,
-        1570872420000: 662,
-        1570872480000: 713,
-        1570872540000: 764,
-        1570872600000: 815
-      },
-      lastPeriodAveragePower: 0,
-      currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
-      currentStepBeginEnergy: 152,
-      currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
-      lastStepAveragePower: 3060,
-      currentLoadmonitoringData: newLoadmonitoringData,
-      warningLimitPower: 50000,
-      warningLimitEnergy: 50000 / 4,
-      alertLimitPower: 5000,
-      alertLimitEnergy: 5000 / 4,
-      lossesPower: 60,
-      lossesEnergyPerPeriod: 15,
-      lossesEnergyPerStep: 1
-    };
+      let expectedPayload = {
+        enabled: true,
+        warning: false,
+        alert: false,
+        active: true,
+        currentPeriodBeginDate: new Date("2019-10-12T09:15:00.000Z"),
+        currentPeriodEndDate: new Date("2019-10-12T09:30:00.000Z"),
+        currentPeriodBeginEnergy: 123000,
+        currentPeriodEndPredictedEnergy: 815,
+        currentPeriodEndPredictedPower: 3260,
+        currentPeriodCounterValues: {
+          1570871700000: 0,
+          1570871760000: 101,
+          1570871820000: 152
+        },
+        currentPeriodPowerValues: {
+          1570871760000: 6060,
+          1570871820000: 3060
+        },
+        currentPeriodPredictedCounterValues: {
+          1570871820000: 152,
+          1570871880000: 203,
+          1570871940000: 254,
+          1570872000000: 305,
+          1570872060000: 356,
+          1570872120000: 407,
+          1570872180000: 458,
+          1570872240000: 509,
+          1570872300000: 560,
+          1570872360000: 611,
+          1570872420000: 662,
+          1570872480000: 713,
+          1570872540000: 764,
+          1570872600000: 815
+        },
+        lastPeriodAveragePower: 0,
+        currentStepBeginDate: new Date("2019-10-12T09:17:00.000Z"),
+        currentStepBeginEnergy: 152,
+        currentStepEndDate: new Date("2019-10-12T09:18:00.000Z"),
+        lastStepAveragePower: 3060,
+        currentLoadmonitoringData: newLoadmonitoringData,
+        warningLimitPower: 50000,
+        warningLimitEnergy: 50000 / 4,
+        alertLimitPower: 5000,
+        alertLimitEnergy: 5000 / 4,
+        lossesPower: 60,
+        lossesEnergyPerPeriod: 15,
+        lossesEnergyPerStep: 1
+      };
 
-    expect(loadmonitoring.Payload).toEqual(expectedPayload);
+      expect(loadmonitoring.Payload).toEqual(expectedPayload);
 
-    //#endregion CHECKING PAYLOAD
+      //#endregion CHECKING PAYLOAD
 
-    //#region CALLING ON VALID PERIOD CLOSE
+      //#region CALLING ON VALID PERIOD CLOSE
 
-    expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
+      expect(onValidPeriodCloseMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON VALID PERIOD CLOSE
+      //#endregion CALLING ON VALID PERIOD CLOSE
 
-    //#region CALLING ON STEP CHANGE
+      //#region CALLING ON STEP CHANGE
 
-    expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onStepChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Closed step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
-      initialStepBeginDate.getTime()
-    );
+      //Closed step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][0].getTime()).toEqual(
+        initialStepBeginDate.getTime()
+      );
 
-    //Closed step end date
-    expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialStepEndDate.getTime()
-    );
+      //Closed step end date
+      expect(onStepChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialStepEndDate.getTime()
+      );
 
-    //New step begin date
-    expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2])
-    );
+      //New step begin date
+      expect(onStepChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2])
+      );
 
-    //New step end date
-    expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
-    );
+      //New step end date
+      expect(onStepChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[2]) + 60 * 1000
+      );
 
-    //#endregion CALLING ON STEP CHANGE
+      //#endregion CALLING ON STEP CHANGE
 
-    //#region CALLING ON TRANSGRESSION
+      //#region CALLING ON TRANSGRESSION
 
-    expect(onTransgressionMockFunc).not.toHaveBeenCalled();
+      expect(onTransgressionMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON TRANSGRESSION
+      //#endregion CALLING ON TRANSGRESSION
 
-    //#region CALLING ON PERIOD CHANGE
+      //#region CALLING ON PERIOD CHANGE
 
-    expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
+      expect(onPeriodChangeMockFunc).toHaveBeenCalledTimes(1);
 
-    //Was old period close properly?
-    expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
+      //Was old period close properly?
+      expect(onPeriodChangeMockFunc.mock.calls[0][0]).toEqual(false);
 
-    //Begin of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
-      initialPeriodBeginDate.getTime()
-    );
+      //Begin of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][1].getTime()).toEqual(
+        initialPeriodBeginDate.getTime()
+      );
 
-    //End of old period
-    expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
-      initialPeriodEndDate.getTime()
-    );
+      //End of old period
+      expect(onPeriodChangeMockFunc.mock.calls[0][2].getTime()).toEqual(
+        initialPeriodEndDate.getTime()
+      );
 
-    //Begin of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0])
-    );
+      //Begin of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][3].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0])
+      );
 
-    //End of new period
-    expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
-      parseInt(Object.keys(newLoadmonitoringData.counters)[0]) + 15 * 60 * 1000
-    );
+      //End of new period
+      expect(onPeriodChangeMockFunc.mock.calls[0][4].getTime()).toEqual(
+        parseInt(Object.keys(newLoadmonitoringData.counters)[0]) +
+          15 * 60 * 1000
+      );
 
-    //#endregion CALLING ON PERIOD CHANGE
+      //#endregion CALLING ON PERIOD CHANGE
 
-    //#region CALLING ON ALERT ACTIVATION
+      //#region CALLING ON ALERT ACTIVATION
 
-    expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
+      expect(onAlertActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON ALERT ACTIVATION
+      //#endregion CALLING ON ALERT ACTIVATION
 
-    //#region CALLING ON ALERT DEACTIVATION
+      //#region CALLING ON ALERT DEACTIVATION
 
-    expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
+      expect(onAlertDeactivationMockFunc).toHaveBeenCalledTimes(1);
 
-    //Warning limit
-    expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
-      loadmonitoringFileContent.alertLimitPower
-    );
+      //Warning limit
+      expect(onAlertDeactivationMockFunc.mock.calls[0][0]).toEqual(
+        loadmonitoringFileContent.alertLimitPower
+      );
 
-    //predicted active power
-    expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
+      //predicted active power
+      expect(onAlertDeactivationMockFunc.mock.calls[0][1]).toEqual(3260);
 
-    //#endregion CALLING ON ALERT DEACTIVATION
+      //#endregion CALLING ON ALERT DEACTIVATION
 
-    //#region CALLING ON WARNING ACTIVATION
+      //#region CALLING ON WARNING ACTIVATION
 
-    expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningActivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING ACTIVATION
+      //#endregion CALLING ON WARNING ACTIVATION
 
-    //#region CALLING ON WARNING DEACTIVATION
+      //#region CALLING ON WARNING DEACTIVATION
 
-    expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
+      expect(onWarningDeactivationMockFunc).not.toHaveBeenCalled();
 
-    //#endregion CALLING ON WARNING DEACTIVATION
+      //#endregion CALLING ON WARNING DEACTIVATION
+    });
+
+    //#endregion DATA ASSOCIATED WITH 3rd STEP SKIP ONE PERIOD
+
+    //TODO - check mechanism for completely invalid data
   });
-
-  //#endregion DATA ASSOCIATED WITH 3rd STEP SKIP ONE PERIOD
 });
